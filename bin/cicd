@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+#vim: sw=2 ts=2 sts=2:
+
+set -e -o pipefail
+progname="$(basename $0)"
+
+usage() {
+cat <<EOHELP
+USAGE:
+  $progname [OPTIONS]
+
+OPTIONS:
+  -h       Show this help"
+
+DESCRIPTION:
+
+CIDB (Continuous Investigation DataBase), is a companion tool to run with
+whatever you do for CI. You tell it when you start and when your done. Like a
+crime scene investigation, it hovers up logs, junit files, images etc,
+recording all the details in a database and the artifacts in storage.
+
+This top level command provides help and dispatch to more specific commands.
+
+COMMANDS:
+  - scan
+  - injest
+EOHELP
+  exit 0
+}
+
+while getopts ":h" opt; do
+  case ${opt} in
+    h ) usage
+      ;;
+    \? ) usage
+      ;;
+  esac
+done
+shift $((OPTIND -1))
+
+if [ $# -eq 0 ]; then
+  usage
+fi
+
+cmd="cidb-$1"; shift
+if which "$cmd"; then
+  exec $cmd "$@"
+fi
+
+echo "$progname: error: unknown command $cmd"
+exit 2
