@@ -1,2 +1,3 @@
-# cidb
-Continuous Integration DataBase
+# CIDB
+
+Continuous Investigation DataBase
