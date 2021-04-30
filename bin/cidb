@@ -4,6 +4,9 @@
 set -e -o pipefail
 progname="$(basename $0)"
 
+DIR="$( cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd )"
+PATH="$PATH:$DIR"
+
 usage() {
 cat <<EOHELP
 USAGE:

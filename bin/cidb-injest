@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+#vim: sw=2 ts=2 sts=2:
+
+set -e -o pipefail
+progname="$(basename $0)"
+
+usage() {
+cat <<EOHELP
+USAGE:
+  $progname [OPTIONS] [PATHS]
+
+OPTIONS:
+  PATHS    Directories and files to injest. Default to current.
+  -h       Show this help"
+
+DESCRIPTION:
+
+Injest the files and directories (recursivly) given by PATHS. Files will be
+uploaded to the evidence locker and analysis written to the database. All
+this is tagged to be part of this build.
+EOHELP
+  exit 0
+}
+
+#while getopts ":hk:pt" opt; do
+while getopts ":h" opt; do
+  case ${opt} in
+    h ) usage
+      ;;
+    #k ) KEY=$OPTARG
+    #  ;;
+    #t ) TAG_RELEASE=true
+    #  ;;
+    \? ) usage
+      ;;
+  esac
+done
+shift $((OPTIND -1))
+
+echo TODO: injesting...
