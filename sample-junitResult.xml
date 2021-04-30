@@ -1,0 +1,66 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<result plugin="junit@1.28">
+  <suites>
+    <suite>
+      <file>/var/jenkins/workspace/fac/freeagent/spec/reports/teaspoon_2020-01-28_15-12-40.xml</file>
+      <name>displaying modal1</name>
+      <duration>0.0</duration>
+      <nodeId>757</nodeId>
+      <enclosingBlocks>
+        <string>77</string>
+        <string>35</string>
+      </enclosingBlocks>
+      <enclosingBlockNames>
+        <string>teaspoon_runner</string>
+        <string>Test</string>
+      </enclosingBlockNames>
+      <cases>
+        <case>
+          <duration>0.0</duration>
+          <className>alertModals displaying modal1</className>
+          <testName>is not displayed when text field is blank</testName>
+          <skipped>false</skipped>
+          <failedSince>0</failedSince>
+        </case>
+        <case>
+          <duration>0.0</duration>
+          <className>alertModals displaying modal1</className>
+          <testName>is not displayed when text field contains matching text</testName>
+          <skipped>false</skipped>
+          <failedSince>0</failedSince>
+        </case>
+      </cases>
+    </suite>
+    <suite>
+      <file>/var/jenkins/workspace/fac/freeagent/spec/reports/SPEC-controllers-concerns-params_processing_helper-3.xml</file>
+      <name>controllers.concerns__params_processing_helper</name>
+      <stdout>
+  &lt;1.853&gt;
+    Invoice::Duplicator:   </stdout>
+      <duration>1.8575128</duration>
+      <timestamp>2020-01-28T15:18:58+00:00</timestamp>
+      <time>1.857512846</time>
+      <nodeId>1058</nodeId>
+      <enclosingBlocks>
+        <string>65</string>
+        <string>35</string>
+      </enclosingBlocks>
+      <enclosingBlockNames>
+        <string>testque_runner_4</string>
+        <string>Test</string>
+      </enclosingBlockNames>
+      <cases>
+        <case>
+          <duration>0.11543187</duration>
+          <className>controllers.concerns::params_processing_helper</className>
+          <testName>ParamsProcessingHelper#forget_param forgets a remembered parameter 1:2:1 (PENDING)</testName>
+          <skipped>true</skipped>
+          <skippedMessage></skippedMessage>
+          <failedSince>0</failedSince>
+        </case>
+      </cases>
+    </suite>
+  </suites>
+  <duration>24971.082</duration>
+  <keepLongStdio>false</keepLongStdio>
+</result>

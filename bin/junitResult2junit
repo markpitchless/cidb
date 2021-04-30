@@ -1,0 +1,103 @@
+#!/usr/bin/env ruby
+#vim: sw=2 ts=2 sts=2:
+
+require 'cidb'
+require 'slop' # option parsing
+
+Usage = <<EOHELP
+USAGE:
+  $progname [OPTIONS] [FILES]
+
+OPTIONS:
+  PATHS    Files to convert.
+  -h       Show this help"
+
+DESCRIPTION:
+
+jUnit files collected by the Jenkins master (typically using the 'junit' DSL
+function), are stored in the build directory (e.g. under '/var/jenkins'), in
+a file called 'junitResult.xml'. Confusingly in a non-junit xml format! This
+filter converts those files to actual junit xml.
+
+EXAMPLE:
+
+  $progName junitResult.xml > junit.xml
+
+EOHELP
+
+module CIDB; module JUnit; class Result2JUnit
+  def initialize
+    @progname = File.basename $0
+    @opts     = nil
+  end
+
+  # Log error messages to STDERR
+  def error(msg)
+    STDERR.puts "#{@progname}: FAIL: #{msg}"
+  end
+
+  # Log error message and exit with the code given
+  def error!(status, msg)
+    error msg
+    exit status
+  end
+
+  def slop(opt)
+    opt.banner = "usage: #{@progname} [OPTIONS] [FILES]"
+    opt.on '--version', 'Print the version' do
+      puts CIDB::VERSION
+      exit
+    end
+    opt.on '--help', 'Print usage message and option docs' do
+      puts opt
+      exit
+    end
+  end
+
+  def main
+    @opts = Slop.parse { |opt| slop(opt) }
+    output_junit  
+  rescue RuntimeError => err
+    error! 1, err
+  end
+
+  # Start doc, run the parse, fill in the doc via the hook methods
+  def output_junit
+    @doc = Ox::Document.new :version => '1.0', encoding: 'UTF-8'
+    sax  = JenkinsSax.new self
+    Ox.sax_parse sax, ARGF.to_io
+
+    xml = Ox.dump @doc, with_xml: true
+    puts xml
+  rescue Slop::Error => err
+    error! 2, err
+  end
+
+  # Hooks called by the sax parse
+
+  def start_suite(suite);
+    @ts = Ox::Element.new('testsuite')
+    @ts[:name]      = suite[:name]
+    @ts[:tests]     = suite[:tests]
+    @ts[:errors]    = suite[:errors]
+    @ts[:failures]  = suite[:failures]
+    @ts[:time]      = suite[:time]
+    @ts[:timestamp] = suite[:timestamp]
+    @doc << @ts
+  end
+
+  def end_suite(suite);
+    @ts = nil
+  end
+
+  def on_case(tcase);
+    tc = Ox::Element.new('testcase')
+    tc[:name]      = tcase[:name]
+    tc[:classname] = tcase[:classname]
+    tc[:time]      = tcase[:time]
+    @ts << tc
+  end
+
+end; end; end
+
+CIDB::JUnit::Result2JUnit.new.main
