@@ -46,7 +46,7 @@ if [ $# -eq 0 ]; then
 fi
 
 cmd="cidb-$1"; shift
-if which "$cmd"; then
+if which "$cmd" &>/dev/null; then
   exec $cmd "$@"
 fi
 

@@ -1,0 +1,62 @@
+#!/usr/bin/env ruby
+#vim: sw=2 ts=2 sts=2:
+
+require 'cidb'
+require 'slop' # option parsing
+
+Description = <<EOTXT
+Process junit files for CIDB. Generate CSV files ready for loading.
+EOTXT
+
+module CIDB
+  module JUnit
+    class Command
+      def initialize
+        @progname = File.basename $0
+        @opts     = nil
+      end
+
+      # Log error messages to STDERR
+      def error(msg)
+        STDERR.puts "#{@progname}: FAIL: #{msg}"
+      end
+
+      # Log error message and exit with the code given
+      def error!(status, msg)
+        error msg
+        exit status
+      end
+
+      def slop(opt)
+        opt.banner = "usage: #{@progname} [OPTIONS] [FILES]"
+        opt.on '--version', 'Print the version' do
+          puts CIDB::VERSION
+          exit
+        end
+        opt.on '--help', 'Print usage message and option docs' do
+          puts opt
+          exit
+        end
+      end
+
+      def main
+        @opts  = Slop.parse { |opt| slop(opt) }
+        @files = @opts.arguments
+        @files.each { |f| junit f }
+      rescue Slop::Error => err
+        error! 1, err
+      end
+
+      def junit(junit_file)
+        puts "processing #{junit_file}"
+        csv = CSVWriter.new
+        sax = Sax.new csv 
+        Ox.sax_parse sax, File.open(junit_file, 'r')
+      rescue StandardError => err
+        error! 2, err
+      end
+    end
+  end
+end
+
+CIDB::JUnit::Command.new.main

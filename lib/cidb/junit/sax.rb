@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+#vim: ts=2 sw=2 sts=2:
 
 require 'stringio'
 require 'ox'
@@ -8,7 +9,7 @@ module CIDB
     class Sax < ::Ox::Sax
       attr_reader :tag_count, :counts
 
-      def initialize
+      def initialize(handler=nil)
         @tag_count   = Hash.new(0) 
         @tag_name    = ""   # last seen tag name, to use when extracting text
         @prop_name   = nil  # last seen name value of <property name=""
@@ -16,6 +17,8 @@ module CIDB
         @case        = nil  # Set to current TestCase when inside <case>
 
         @counts = Hash.new(0)
+
+        @handler = handler
       end
 
       def inc(name, amt = 1)
@@ -82,22 +85,28 @@ module CIDB
         end
       end
 
+      protected
+
       # Hooks for sub classers to do stuff with the parsed out data
 
       # Called with a TestSuite instance after reading the suite and it's
       # properties but before seeing and test cases.
       # XXX: Doesn't fire for an empty testsuite.
-      def start_suite(suite); end
+      def start_suite(suite)
+        @handler.start_suite suite
+      end
 
       # Called with a TestSuite instance after processing all of it's test cases.
       # The suite is now complete. Generally what you want to hook.
-      def end_suite(suite); end
+      def end_suite(suite)
+        @handler.end_suite suite if @handler
+      end
 
       # Fires once for each complete TestCase, after fully reading it's data.
-      def on_case(tcase); end
+      def on_case(tcase)
+        @handler.on_case tcase if @handler
+      end
 
     end #Sax
   end #JUnit
 end #CIDB
-
-#vim: ts=2 sw=2 sts=2:

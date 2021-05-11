@@ -57,7 +57,7 @@ module CIDB; module JUnit; class Result2JUnit
   def main
     @opts = Slop.parse { |opt| slop(opt) }
     output_junit  
-  rescue RuntimeError => err
+  rescue Slop::Error => err
     error! 1, err
   end
 
@@ -69,7 +69,7 @@ module CIDB; module JUnit; class Result2JUnit
 
     xml = Ox.dump @doc, with_xml: true
     puts xml
-  rescue Slop::Error => err
+  rescue StandardError => err
     error! 2, err
   end
 

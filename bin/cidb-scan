@@ -36,6 +36,50 @@ while getopts ":h" opt; do
 done
 shift $((OPTIND -1))
 
-echo TODO: scanning...
 
-find . -name '*.xml'
+scan-jenkins-build-dir() {
+  echo foo
+}
+
+scan-jenkins-workspace() {
+  echo foo
+}
+
+scan-github-workflow() {
+  echo foo
+}
+
+scan-general() {
+  echo foo
+}
+
+scan-dir() {
+  local dir="$1"
+  if [[ ! -d $dir ]]; then
+    echo Skipping path, not a directory: "$dir"
+    return 1
+  fi
+
+  echo Scanning "$dir"
+  cd "$dir"
+  if [ -f build.xml ]; then
+    echo Scanning Jenkins build dir
+    export CIDB_BUILDER=jenkins
+    scan-jenkins-build-dir
+  elif [[ -n $JENKINS_HOME ]]; then
+    echo Scanning Jenkins workspace
+    export CIDB_BUILDER=jenkins
+    scan-jenkins-workspace
+  elif [[ -n $GITHUB_WORKFLOW ]]; then
+    echo Scanning GitHub Actions Workflow
+    export CIDB_BUILDER=github
+    scan-github-workflow
+  else
+    echo Scanning general directory
+    scan-general
+  fi
+}
+
+for dir in "$@"; do
+  scan-dir "$dir"
+done
