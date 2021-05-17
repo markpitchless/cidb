@@ -21,65 +21,50 @@ EOHELP
   exit 0
 }
 
-#while getopts ":hk:pt" opt; do
-while getopts ":h" opt; do
+while getopts ":hf" opt; do
   case ${opt} in
     h ) usage
       ;;
-    #k ) KEY=$OPTARG
-    #  ;;
-    #t ) TAG_RELEASE=true
-    #  ;;
+    f ) FORCE=true
+      ;;
     \? ) usage
       ;;
   esac
 done
 shift $((OPTIND -1))
 
+SCAN_DIR="."
+if [ -n "$1" ]; then
+  SCAN_DIR="$1"
+  shift
+fi
 
-scan-jenkins-build-dir() {
-  echo foo
-}
+if [ ! -d "$SCAN_DIR" ]; then
+  echo Scan directory not found: "$SCAN_DIR"
+  exit 10
+fi
 
-scan-jenkins-workspace() {
-  echo foo
-}
-
-scan-github-workflow() {
-  echo foo
-}
-
-scan-general() {
-  echo foo
-}
-
-scan-dir() {
-  local dir="$1"
-  if [[ ! -d $dir ]]; then
-    echo Skipping path, not a directory: "$dir"
-    return 1
+scan() {
+  if [ -d cidb ] && [[ $FORCE == true ]]; then
+    echo Removing existing scan with force
+    rm -rf cidb
   fi
+  mkdir cidb
+  env > cidb/env.dump
+  git rev-parse HEAD > cidb/HEAD
 
-  echo Scanning "$dir"
-  cd "$dir"
+  export CIDB_BUILDER=general
   if [ -f build.xml ]; then
-    echo Scanning Jenkins build dir
-    export CIDB_BUILDER=jenkins
-    scan-jenkins-build-dir
+    CIDB_BUILDER=jenkins
   elif [[ -n $JENKINS_HOME ]]; then
-    echo Scanning Jenkins workspace
-    export CIDB_BUILDER=jenkins
-    scan-jenkins-workspace
+    CIDB_BUILDER=jenkins
   elif [[ -n $GITHUB_WORKFLOW ]]; then
-    echo Scanning GitHub Actions Workflow
-    export CIDB_BUILDER=github
-    scan-github-workflow
-  else
-    echo Scanning general directory
-    scan-general
+    CIDB_BUILDER=github
   fi
+  echo Scanning $CIDB_BUILDER build
+  echo "$CIDB_BUILDER" > cidb/builder
 }
 
-for dir in "$@"; do
-  scan-dir "$dir"
-done
+echo Scanning "$SCAN_DIR"
+cd "$SCAN_DIR"
+scan
