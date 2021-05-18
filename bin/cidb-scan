@@ -67,7 +67,7 @@ scan() {
 
   export CIDB_BUILDER=general
   if [ -f build.xml ]; then
-    CIDB_BUILDER=jenkins
+    CIDB_BUILDER=jenkins-build
   elif [[ -n $JENKINS_HOME ]]; then
     CIDB_BUILDER=jenkins
   elif [[ -n $GITHUB_WORKFLOW ]]; then
@@ -75,8 +75,30 @@ scan() {
   fi
   info Scanning $CIDB_BUILDER build
   cidb-build-set builder "$CIDB_BUILDER"
+  scan-"$CIDB_BUILDER"
 
   cidb-build-set scan-end-time "$(date +%Y-%m-%dT%H:%M:%S%z)"
+}
+
+scan-jenkins-build() {
+  info Scanning Jenkins build dir
+  echo TODO: parse build.xml
+  if [ -f junitResult.xml ]; then
+    info Found junit results
+    junitResult2junit junitResult.xml | cidb-junit
+  fi
+}
+
+scan-jenkins() {
+  info Scanning Jenkins workspace
+}
+
+scan-github() {
+  info Scanning GitHub Workflow run
+}
+
+scan-general() {
+  info Scanning general build directory
 }
 
 cidb-build-set() {

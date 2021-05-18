@@ -42,16 +42,22 @@ module CIDB
       def main
         @opts  = Slop.parse { |opt| slop(opt) }
         @files = @opts.arguments
-        @files.each { |f| junit f }
+        if @files.empty?
+          junit STDIN
+        else
+          @files.each do |f|
+            puts "processing #{f}"
+            junit File.open(f, 'r')
+          end
+        end
       rescue Slop::Error => err
         error! 1, err
       end
 
-      def junit(junit_file)
-        puts "processing #{junit_file}"
+      def junit(io)
         csv = CSVWriter.new
         sax = Sax.new csv 
-        Ox.sax_parse sax, File.open(junit_file, 'r')
+        Ox.sax_parse sax, io
       rescue StandardError => err
         error! 2, err
       end

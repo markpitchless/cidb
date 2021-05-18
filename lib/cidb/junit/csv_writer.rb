@@ -7,13 +7,17 @@ module CIDB
   module JUnit
     class CSVWriter
       def initialize(
-        suite_file: 'suite.csv',
-        case_file:  'case.csv',
+        suite_file: 'cidb/suites.csv',
+        case_file:  'cidb/cases.csv',
         append:     false
       )
         mode = append ? 'a' : 'w'
         @suite_csv = CSV.open suite_file, mode
         @case_csv  = CSV.open case_file, mode
+        unless append
+          @suite_csv << %w[name timestamp tests failures errors time]
+          @case_csv  << %w[classname name time skipped failed]
+        end
       end
 
       def start_suite(suite)
