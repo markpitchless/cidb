@@ -4,8 +4,11 @@
 set -e -o pipefail
 progname="$(basename $0)"
 
+# Add the bin to the PATH, first, for finding cidb-* commands
+# Makes it work inside a bundle or called direct in checkout (./bin/cidb) when
+# not added to the PATH.
 DIR="$( cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd )"
-PATH="$PATH:$DIR"
+PATH="$DIR:$PATH"
 
 usage() {
 cat <<EOHELP

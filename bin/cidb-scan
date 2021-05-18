@@ -82,7 +82,7 @@ scan() {
 
 scan-jenkins-build() {
   info Scanning Jenkins build dir
-  echo TODO: parse build.xml
+  info TODO: parse build.xml
   if [ -f junitResult.xml ]; then
     info Found junit results
     junitResult2junit junitResult.xml | cidb-junit
