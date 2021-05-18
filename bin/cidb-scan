@@ -4,14 +4,19 @@
 set -e -o pipefail
 progname="$(basename $0)"
 
+info() {
+  echo "$progname: $*"
+}
+
 usage() {
 cat <<EOHELP
 USAGE:
-  $progname [OPTIONS] [PATHS]
+  $progname [OPTIONS] [PATH]
 
 OPTIONS:
-  PATHS    Directories and files to scan. Default to current.
-  -h       Show this help"
+  PATH     Directory path to scan. Default to current.
+  -f       Force. Remove existing scan and re-run.
+  -h       Show this help.
 
 DESCRIPTION:
 
@@ -40,16 +45,23 @@ if [ -n "$1" ]; then
 fi
 
 if [ ! -d "$SCAN_DIR" ]; then
-  echo Scan directory not found: "$SCAN_DIR"
+  info Scan directory not found: "$SCAN_DIR"
   exit 10
 fi
 
 scan() {
-  if [ -d cidb ] && [[ $FORCE == true ]]; then
-    echo Removing existing scan with force
-    rm -rf cidb
+  if [ -d cidb ]; then
+    if [[ $FORCE == true ]]; then
+      info Removing existing scan with force
+      rm -rf cidb
+    else
+      info Cant scan already scanned directory without force
+      exit 10
+    fi
   fi
   mkdir cidb
+  cidb-build-set scan-start-time "$(date +%Y-%m-%dT%H:%M:%S%z)"
+
   env > cidb/env.dump
   git rev-parse HEAD > cidb/HEAD
 
@@ -61,10 +73,19 @@ scan() {
   elif [[ -n $GITHUB_WORKFLOW ]]; then
     CIDB_BUILDER=github
   fi
-  echo Scanning $CIDB_BUILDER build
-  echo "$CIDB_BUILDER" > cidb/builder
+  info Scanning $CIDB_BUILDER build
+  cidb-build-set builder "$CIDB_BUILDER"
+
+  cidb-build-set scan-end-time "$(date +%Y-%m-%dT%H:%M:%S%z)"
 }
 
-echo Scanning "$SCAN_DIR"
+cidb-build-set() {
+  local key="$1"
+  local data="$2"
+  echo "$key=$data" >> cidb/build.data
+}
+
+info Scanning "$SCAN_DIR"
 cd "$SCAN_DIR"
 scan
+cat cidb/build.data
