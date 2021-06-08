@@ -8,18 +8,15 @@ module CIDB
     class Command
       include CIDB::Sloppy
 
-      def banner
-        "USAGE: #{prog_name} [OPTIONS] [FILES]"
-      end
+      banner "USAGE: %{prog} [OPTIONS] [FILES]"
 
-      def description
-        <<~EOTXT
+      description <<~EOTXT
         Process junit files for CIDB. Generate CSV files ready for loading.
-        EOTXT
-      end
+      EOTXT
 
       # TODO:
       # def slop(opt)
+      #   std_slop # super?
       #   opt.string :csv_dir
       # end
 
@@ -29,8 +26,6 @@ module CIDB
 
       def files
         Enumerator.new do |yielder|
-          # @args << STDIN if @args.empty?
-          # @args.each do |f|
           ARGV << STDIN if @args.empty?
           ARGV.each do |f|
             info "Processing #{f}"
