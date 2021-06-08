@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "cidb/version"
+require_relative "cidb/sloppy"
 require_relative "cidb/junit/suite"
 require_relative "cidb/junit/case"
 require_relative "cidb/junit/sax"

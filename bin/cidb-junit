@@ -2,56 +2,41 @@
 #vim: sw=2 ts=2 sts=2:
 
 require 'cidb'
-require 'slop' # option parsing
-
-Description = <<EOTXT
-Process junit files for CIDB. Generate CSV files ready for loading.
-EOTXT
 
 module CIDB
   module JUnit
     class Command
-      def initialize
-        @progname = File.basename $0
-        @opts     = nil
+      include CIDB::Sloppy
+
+      def banner
+        "USAGE: #{prog_name} [OPTIONS] [FILES]"
       end
 
-      # Log error messages to STDERR
-      def error(msg)
-        STDERR.puts "#{@progname}: FAIL: #{msg}"
+      def description
+        <<~EOTXT
+        Process junit files for CIDB. Generate CSV files ready for loading.
+        EOTXT
       end
 
-      # Log error message and exit with the code given
-      def error!(status, msg)
-        error msg
-        exit status
+      # TODO:
+      # def slop(opt)
+      #   opt.string :csv_dir
+      # end
+
+      def main(opts, args)
+        files.each { |f| junit f }
       end
 
-      def slop(opt)
-        opt.banner = "usage: #{@progname} [OPTIONS] [FILES]"
-        opt.on '--version', 'Print the version' do
-          puts CIDB::VERSION
-          exit
-        end
-        opt.on '--help', 'Print usage message and option docs' do
-          puts opt
-          exit
-        end
-      end
-
-      def main
-        @opts  = Slop.parse { |opt| slop(opt) }
-        @files = @opts.arguments
-        if @files.empty?
-          junit STDIN
-        else
-          @files.each do |f|
-            puts "processing #{f}"
-            junit File.open(f, 'r')
+      def files
+        Enumerator.new do |yielder|
+          # @args << STDIN if @args.empty?
+          # @args.each do |f|
+          ARGV << STDIN if @args.empty?
+          ARGV.each do |f|
+            info "Processing #{f}"
+            yielder << f.is_a?(File) ? File.open(f, 'r') : f
           end
         end
-      rescue Slop::Error => err
-        error! 1, err
       end
 
       def junit(io)
@@ -59,10 +44,10 @@ module CIDB
         sax = Sax.new csv 
         Ox.sax_parse sax, io
       rescue StandardError => err
-        error! 2, err
+        fail! 2, err
       end
     end
   end
 end
 
-CIDB::JUnit::Command.new.main
+CIDB::JUnit::Command.new.run
