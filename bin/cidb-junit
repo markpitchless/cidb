@@ -14,11 +14,12 @@ module CIDB
         Process junit files for CIDB. Generate CSV files ready for loading.
       EOTXT
 
-      # TODO:
-      # def slop(opt)
-      #   std_slop # super?
-      #   opt.string :csv_dir
-      # end
+      def slop(opt)
+        opt.string "--csv-suites", "Where to write test suite .csv output",
+          default: "suites.csv"
+        opt.string "--csv-cases", "Where to write test case .csv output",
+          default: "cases.csv"
+      end
 
       def main(opts, args)
         files.each { |f| junit f }
@@ -26,16 +27,23 @@ module CIDB
 
       def files
         Enumerator.new do |yielder|
-          ARGV << STDIN if @args.empty?
-          ARGV.each do |f|
-            info "Processing #{f}"
-            yielder << f.is_a?(File) ? File.open(f, 'r') : f
+          if @args.empty?
+            yielder << STDIN
+          else
+            ARGV.each do |f|
+              raise "File Not Found: #{f}" unless File.exist? f
+              info "Processing #{f}"
+              yielder << File.open(f, 'r')
+            end
           end
         end
       end
 
       def junit(io)
-        csv = CSVWriter.new
+        csv = CSVWriter.new(
+          suite_file: @opts[:csv_suites],
+          case_file:  @opts[:csv_cases]
+        )
         sax = Sax.new csv 
         Ox.sax_parse sax, io
       rescue StandardError => err

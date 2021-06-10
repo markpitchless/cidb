@@ -75,7 +75,7 @@ module CIDB
     end
 
     # TODO: --quite to stop info logging. Twice for errors. 3 times for --silent
-    def std_slop(opt)
+    def std_slop(opt=nil)
       opt.banner = banner if respond_to? :banner
 
       opt.on '--version', 'Print the version' do
@@ -87,19 +87,15 @@ module CIDB
         exit
       end
 
+      if block_given?
+        opt.separator ""
+        yield opt
+      end
+
       if respond_to? :description
         opt.separator "\nDESCRIPTION:"
         opt.separator "    " + description
       end
-
-      yield opt if block_given?
-    end
-
-    ##
-    # Called by run, via Slop.parse (with opt) to run the option parse.
-    # You should impliment this in your class to add your options.
-    def slop(opt)
-      std_slop opt
     end
 
     ##
@@ -108,7 +104,7 @@ module CIDB
     # Call your main(opt, arg) method (if there). Hook this to write your command.
     # Slop errors (opt parsing errors) will log the fatal and exit 1.
     def run
-      @opts = Slop.parse { |opt| slop opt }
+      @opts = Slop.parse do |opt| std_slop(opt) { |o| slop(o) } end
       @args = @opts.arguments
       ARGV.replace @opts.arguments # Make sure sloptions aren't consumed by ARGF
 

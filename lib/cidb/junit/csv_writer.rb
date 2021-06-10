@@ -7,8 +7,8 @@ module CIDB
   module JUnit
     class CSVWriter
       def initialize(
-        suite_file: 'cidb/suites.csv',
-        case_file:  'cidb/cases.csv',
+        suite_file: 'suites.csv',
+        case_file:  'cases.csv',
         append:     false
       )
         mode = append ? 'a' : 'w'
