@@ -1,0 +1,64 @@
+#!/usr/bin/env ruby
+#vim: sw=2 ts=2 sts=2:
+
+require 'cidb'
+
+module CIDB
+  module Data
+    class Command
+      include CIDB::Sloppy
+
+      banner "USAGE: %{prog} [OPTIONS] [--put|--get] [KEY] [VALUE]"
+
+      description <<~EOTXT
+        Read and write values for keys in data files. KEY is a dotted path, the
+        first part is the data store file to use. Maps to $KEY.yaml. The rest is
+        the key name in the store.
+
+        To get keys and write the values to stdout:
+
+          cidb-data build.id
+          cidb-data --get cidb.s3-bucket
+          cidb-data config.include config.exclude
+
+        To store values in keys:
+
+          cidb-data --put build.size 42
+
+        The data store file is accessed using a transaction that locks it for
+        any other access while the command runs. This serilises access allowing
+        parallel processes to read and write data keys happily.
+      EOTXT
+
+      def slop(opt)
+        opt.bool "--get", "Get VALUE for KEY. Default if no --get or --put.", default: false
+        opt.bool "--put", "Write VALUE to KEY.", default: false
+        # --file FILE Use data file FILE, instead of deriving from the KEY
+        # --default VAL Value to output if KEY not found
+      end
+
+      def main(opts, args)
+        return if args.empty?
+        return main_put args if opts.put?
+        main_get args
+      end
+
+      private
+
+      def main_get(args)
+        args.each do |k|
+          v = Data.get_data k
+          puts "%s: %s" % [k, v]
+        end
+      end
+
+      def main_put(args)
+        args.each_slice(2) do |k,v|
+          Data.put_data k, v
+        end
+      end
+    end
+  end
+end
+
+CIDB::Data::Command.new.run

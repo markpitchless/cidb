@@ -5,7 +5,26 @@ require 'logger'
 require 'slop' # option parsing
 
 module CIDB
-  # Mixin for classes that act as command lines
+  ##
+  # Mixin for classes that act as slop driven command lines
+  #
+  #  class GreetCommand
+  #    include CIDB::Sloppy
+  #
+  #    banner "USAGE: %{prog} [OPTIONS] FILE"
+  #    description <<~EOT
+  #      Process foo files
+  #    EOT
+  #
+  #    def slop(opt)
+  #      opt.bool "--bye"
+  #    end
+  #
+  #    def main(opts, args)
+  #      greeting == if opts.bye? then "goodbye" else "hello" end
+  #      puts "#{greeting} #{args.join(', ')}"
+  #    end
+  #  end
   module Sloppy
     module DSL
       def banner(desc=nil)
@@ -101,14 +120,13 @@ module CIDB
     ##
     # Run the command.
     # Parse the options, calling slop(opt). Fix up ARGV.
-    # Call your main(opt, arg) method (if there). Hook this to write your command.
+    # Call your main(opt, args) method (if there). Hook this to write your command.
     # Slop errors (opt parsing errors) will log the fatal and exit 1.
     def run
       @opts = Slop.parse do |opt| std_slop(opt) { |o| slop(o) } end
       @args = @opts.arguments
       ARGV.replace @opts.arguments # Make sure sloptions aren't consumed by ARGF
-
-      main @opts, @arg if respond_to? :main # Dispatch to the including class
+      main @opts, @args if respond_to? :main # Dispatch to the including class
     rescue Slop::Error => err
       fail! 1, err
     end
