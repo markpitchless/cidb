@@ -38,6 +38,7 @@ module CIDB
       end
 
       def main(opts, args)
+        info "hello"
         return if args.empty?
         return main_put args if opts.put?
         main_get args
