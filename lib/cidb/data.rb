@@ -23,14 +23,17 @@ module CIDB
       if parts.size < 2
         raise Error.new "Data key #{key.inspect} too short"
       end
-      st = store(parts[0])
+      st = store(parts[0], create: true)
       store_key = parts[1..-1].join('.')
       st.transaction do st[store_key] = val end
     end
 
-    def self.store(name)
-      fname = "%s.yaml" % name
-      raise Error.new "Data store #{fname.inspect} not found" unless File.exists? fname
+    def self.store(name, create: false)
+      data_dir = ENV.fetch 'CIDB_DATA', '.'
+      fname = File.join data_dir, "#{name}.yaml"
+      unless File.exists?(fname) || create
+        raise Error.new "Data store #{fname.inspect} not found"
+      end
       YAML::Store.new fname
     end
   end #Data

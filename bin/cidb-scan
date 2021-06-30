@@ -50,20 +50,22 @@ if [ ! -d "$SCAN_DIR" ]; then
 fi
 
 scan() {
-  if [ -d cidb ]; then
+  export CIDB_DATA=cidb
+  if [ -d "$CIDB_DATA" ]; then
     if [[ $FORCE == true ]]; then
       info Removing existing scan with force
-      rm -rf cidb
+      rm -rf "$CIDB_DATA"
     else
       info Cant scan already scanned directory without force
       exit 10
     fi
   fi
-  mkdir cidb
-  cidb-build-set scan-start-time "$(date +%Y-%m-%dT%H:%M:%S%z)"
+  mkdir -p "$CIDB_DATA"
 
-  env > cidb/env.dump
-  git rev-parse HEAD > cidb/HEAD
+  cidb-data --put build.scan-start-time "$(date +%Y-%m-%dT%H:%M:%S%z)"
+
+  env > "$CIDB_DATA"/env.dump
+  git rev-parse HEAD > "$CIDB_DATA"/HEAD
 
   export CIDB_BUILDER=general
   if [ -f build.xml ]; then
@@ -74,10 +76,10 @@ scan() {
     CIDB_BUILDER=github
   fi
   info Scanning $CIDB_BUILDER build
-  cidb-build-set builder "$CIDB_BUILDER"
+  cidb-data --put build.builder "$CIDB_BUILDER"
   scan-"$CIDB_BUILDER"
 
-  cidb-build-set scan-end-time "$(date +%Y-%m-%dT%H:%M:%S%z)"
+  cidb-data --put build.scan-end-time "$(date +%Y-%m-%dT%H:%M:%S%z)"
 }
 
 scan-jenkins-build() {
@@ -101,13 +103,7 @@ scan-general() {
   info Scanning general build directory
 }
 
-cidb-build-set() {
-  local key="$1"
-  local data="$2"
-  echo "$key=$data" >> cidb/build.data
-}
-
 info Scanning "$SCAN_DIR"
 cd "$SCAN_DIR"
 scan
-cat cidb/build.data
+cat cidb/build.yaml
