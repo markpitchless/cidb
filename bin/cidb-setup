@@ -1,0 +1,34 @@
+#!/usr/bin/env ruby
+#vim: sw=2 ts=2 sts=2:
+
+require 'cidb'
+# require 'cidb/db'
+
+module CIDB
+  class SetupCommand
+    include CIDB::Sloppy
+
+    description <<~EOTXT
+      Setup a new system. Installs schema in database.
+    EOTXT
+
+    def main(opts, args)
+      CIDB.connect
+      load_schema
+    end
+
+    def load_schema
+      if DB.tables.include? :builds
+        info "Database schema exists, skipping setup"
+        return
+      end
+      DB.create_table :builds do
+        String :build_id, primary_key: true
+        String :url
+      end
+      info "Setup database schema: " + DB.tables.inspect
+    end
+  end
+end
+
+CIDB::SetupCommand.new.run

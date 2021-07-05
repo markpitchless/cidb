@@ -13,4 +13,8 @@ require_relative "cidb/junit/csv_writer"
 
 module CIDB
   class Error < StandardError; end
+
+  def self.connect
+    require_relative 'cidb/db'
+  end
 end

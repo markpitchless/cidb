@@ -84,6 +84,9 @@ module CIDB
       end
     end
 
+    def slop(o)
+    end
+
     ##
     # Run the command.
     # Parse the options, calling slop(opt). Fix up ARGV.

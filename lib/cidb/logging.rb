@@ -45,7 +45,7 @@ module CIDB
     end
 
     ## Log fatal message
-    def fatal(status, msg)
+    def fatal(msg)
       logger.fatal msg
     end
 

@@ -1,0 +1,43 @@
+#!/usr/bin/env ruby
+#vim: sw=2 ts=2 sts=2:
+
+require 'cidb'
+# require 'cidb/db'
+
+module CIDB
+module Builds
+  class Command
+    include CIDB::Sloppy
+
+    description <<~EOTXT
+      Builds are the core of CIDB. This command is for them.
+    EOTXT
+
+    def slop(o)
+      o.boolean "--create"
+      o.string "--build-id"
+    end
+
+    def main(opts, args)
+      CIDB.connect
+      return create(opts, args) if opts.create?
+      list(opts, args)
+    end
+
+    def list(opts, args)
+      builds = DB[:builds]
+      builds.each do |b|
+        puts b
+      end
+      puts "#{builds.count} builds"
+    end
+
+    def create(opts, args)
+      build_id = opts[:build_id] || fail!(10, "No build_id given")
+      DB[:builds].insert build_id: build_id
+    end
+  end
+end
+end
+
+CIDB::Builds::Command.new.run
