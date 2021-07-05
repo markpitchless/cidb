@@ -11,7 +11,7 @@ USAGE:
 
 OPTIONS:
   PATHS    Directories and files to injest. Default to current.
-  -h       Show this help"
+  -h       Show this help
 
 DESCRIPTION:
 
@@ -22,19 +22,39 @@ EOHELP
   exit 0
 }
 
-#while getopts ":hk:pt" opt; do
-while getopts ":h" opt; do
+export CIDB_BUILD_URL
+
+while getopts ":hb:" opt; do
   case ${opt} in
-    h ) usage
+    h) usage
       ;;
-    #k ) KEY=$OPTARG
-    #  ;;
-    #t ) TAG_RELEASE=true
-    #  ;;
-    \? ) usage
+    b) CIDB_BUILD_URL=$OPTARG
+      ;;
+    \?) usage
       ;;
   esac
 done
 shift $((OPTIND -1))
+
+# TODO: Move this into scan? Called them scanners.
+
+if [[ -z "$CIDB_BUILD_URL" ]]; then
+  echo ERROR: CIDB_BUILD_URL not set and -b not given
+  exit 10
+fi
+
+# Create or get the build
+# Merge build.yaml to set the bucket
+# Set CIDB_BUCKET? - This should be the top of the bucket
+# cidb-build ?
+# CIDB_BUCKET=
+
+# Find any junit files and parse
+# cidb-injest-junit
+
+# Sync to the S3 bucket, do this last, so we collect any files output above
+# Injestors (scanners?) write to cidb/ (CIDB_DATA), either their own files,
+# or using cidb-data. We hover that up at the end.
+# cidb-injest-s3
 
 echo TODO: injesting...
