@@ -2,11 +2,14 @@
 #vim: sw=2 ts=2 sts=2:
 
 set -e -o pipefail
-progname="$(basename $0)"
+progname="$(basename "$0")"
 
 info() {
   echo "$progname: $*"
 }
+
+export CIDB_BUILD_ID
+FORCE=false
 
 usage() {
 cat <<EOHELP
@@ -21,16 +24,22 @@ OPTIONS:
 DESCRIPTION:
 
 Scan the PATHS for files of interest to CIDB. Artifacts we can collect and
-logs, junit results we can parse.
+logs, junit results we can parse, etc
+
+Injest the files and directories (recursivly) given by PATHS. Files will be
+uploaded to the evidence locker and analysis written to the database. All
+this is tagged to be part of this build.
 EOHELP
   exit 0
 }
 
-while getopts ":hf" opt; do
+while getopts ":hfb:" opt; do
   case ${opt} in
     h ) usage
       ;;
     f ) FORCE=true
+      ;;
+    b) CIDB_BUILD_ID=$OPTARG
       ;;
     \? ) usage
       ;;
@@ -50,6 +59,38 @@ if [ ! -d "$SCAN_DIR" ]; then
 fi
 
 scan() {
+  setup-data
+  cidb-data --put build.scan-start-time "$(date +%Y-%m-%dT%H:%M:%S%z)"
+
+  env > "$CIDB_DATA"/env.dump
+
+  if git rev-parse >/dev/null; then
+    git rev-parse HEAD > "$CIDB_DATA"/HEAD
+  fi
+
+  scan-builder
+  if [[ -z "$CIDB_BUILD_ID" ]]; then
+    info "ERROR: CIDB_BUILD_ID not set, can't identify the build"
+    cidb-data --put build.scan-end-time "$(date +%Y-%m-%dT%H:%M:%S%z)"
+    exit 10
+  fi
+  cidb-data --put build.build_id "$CIDB_BUILD_ID"
+  cidb-builds --put
+
+  # Find any junit files and parse
+  # cidb-injest-junit
+
+  # Sync to the S3 bucket, do this last, so we collect any files output above
+  # Injestors (scanners?) write to cidb/ (CIDB_DATA), either their own files,
+  # or using cidb-data. We hover that up at the end.
+  # cidb-injest-s3 | cidb-injest-files | cidb-injest-artifacts
+
+  cidb-data --put build.scan-end-time "$(date +%Y-%m-%dT%H:%M:%S%z)"
+}
+
+# Setup the data directory, exporting CIDB_DATA with its path
+# Exits if the directory exists. Removes first with force (-f)
+setup-data() {
   export CIDB_DATA=cidb
   if [ -d "$CIDB_DATA" ]; then
     if [[ $FORCE == true ]]; then
@@ -57,16 +98,14 @@ scan() {
       rm -rf "$CIDB_DATA"
     else
       info Cant scan already scanned directory without force
-      exit 10
+      exit 11
     fi
   fi
   mkdir -p "$CIDB_DATA"
+}
 
-  cidb-data --put build.scan-start-time "$(date +%Y-%m-%dT%H:%M:%S%z)"
-
-  env > "$CIDB_DATA"/env.dump
-  git rev-parse HEAD > "$CIDB_DATA"/HEAD
-
+# Work out what ran this build. Run additional scans by type.
+scan-builder() {
   export CIDB_BUILDER=general
   if [ -f build.xml ]; then
     CIDB_BUILDER=jenkins-build
@@ -75,16 +114,14 @@ scan() {
   elif [[ -n $GITHUB_WORKFLOW ]]; then
     CIDB_BUILDER=github
   fi
-  info Scanning $CIDB_BUILDER build
   cidb-data --put build.builder "$CIDB_BUILDER"
+  info Scanning $CIDB_BUILDER build
   scan-"$CIDB_BUILDER"
-
-  cidb-data --put build.scan-end-time "$(date +%Y-%m-%dT%H:%M:%S%z)"
 }
 
 scan-jenkins-build() {
   info Scanning Jenkins build dir
-  info TODO: parse build.xml
+  info TODO: parse build.xml, set build_id
   if [ -f junitResult.xml ]; then
     info Found junit results
     junitResult2junit junitResult.xml | cidb-junit
@@ -93,14 +130,20 @@ scan-jenkins-build() {
 
 scan-jenkins() {
   info Scanning Jenkins workspace
+  [ -z "$CIDB_BUILD_ID" ] && CIDB_BUILD_ID="$BUILD_URL"
+  cidb-data --put build.url "$BUILD_URL"
 }
 
 scan-github() {
   info Scanning GitHub Workflow run
+  [ -z "$CIDB_BUILD_ID" ] && CIDB_BUILD_ID="$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+  cidb-data --put build.url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
 }
 
 scan-general() {
   info Scanning general build directory
+  [ -z "$CIDB_BUILD_ID" ] && CIDB_BUILD_ID="$(hostname):$(pwd)"
+  cidb-data --put build.url "$(hostname):$(pwd)"
 }
 
 info Scanning "$SCAN_DIR"

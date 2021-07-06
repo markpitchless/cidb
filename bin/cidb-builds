@@ -2,7 +2,6 @@
 #vim: sw=2 ts=2 sts=2:
 
 require 'cidb'
-# require 'cidb/db'
 
 module CIDB
 module Builds
@@ -14,13 +13,14 @@ module Builds
     EOTXT
 
     def slop(o)
-      o.boolean "--create"
-      o.string "--build-id"
+      o.boolean "--put", "Put build, create if not there, update if it is."
+      o.string "--build-id", "The build_id for the new build when creating"
+      o.string "--url", "The url for the new build when creating"
     end
 
     def main(opts, args)
       CIDB.connect
-      return create(opts, args) if opts.create?
+      return put_build(opts, args) if opts.put?
       list(opts, args)
     end
 
@@ -32,9 +32,23 @@ module Builds
       puts "#{builds.count} builds"
     end
 
-    def create(opts, args)
-      build_id = opts[:build_id] || fail!(10, "No build_id given")
-      DB[:builds].insert build_id: build_id
+    # TODO: if given build_url, use that as id if no id
+    def put_build(opts, args)
+      # TODO: get_data is a bit broken, needs a fetch that can return nil if not found
+      id = opts[:build_id] || Data.get_data('build.build_id') || fail!(10, "No build_id given")
+      data = {
+        url: opts[:url] #|| Data.get_data('build.url')
+      }
+      build = DB[:builds].first(build_id: id)
+      if build
+        data = build.merge data
+        DB[:builds].where(build_id: id).update(data)
+        info "Updated build: #{id}"
+      else
+        build = { build_id: id }.merge data
+        DB[:builds].insert(build)
+        info "New build: #{id}"
+      end
     end
   end
 end

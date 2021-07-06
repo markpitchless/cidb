@@ -2,7 +2,6 @@
 #vim: sw=2 ts=2 sts=2:
 
 require 'cidb'
-# require 'cidb/db'
 
 module CIDB
   class SetupCommand
