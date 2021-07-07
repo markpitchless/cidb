@@ -47,14 +47,14 @@ module CIDB
 
       def main_get(args)
         args.each do |k|
-          v = Data.get_data k
+          v = Data.fetch k
           puts "%s: %s" % [k, v]
         end
       end
 
       def main_put(args)
         args.each_slice(2) do |k,v|
-          Data.put_data k, v
+          Data.put k, v
         end
       end
     end

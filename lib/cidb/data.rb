@@ -6,34 +6,43 @@ require 'yaml/store'
 
 module CIDB
   module Data
-    def self.get_data(key)
-      parts = key.split '.'
-      if parts.size < 2
-        raise Error.new "Data key #{key.inspect} too short"
-      end
-      st = store(parts[0])
+    def self.fetch(key, *args)
+      parts = parse_key key
       store_key = parts[1..-1].join('.')
-      v = st.transaction do st[store_key] end
-      raise Error.new "Data key #{key.inspect} not found" if v.nil?
+      st = store(parts[0])
+      v = st&.transaction do
+        st[store_key]
+      end
+      if v.nil?
+        return args[0] unless args.empty? # default
+        raise Error.new "Data key #{key.inspect} not found"
+      end
       v
     end
 
-    def self.put_data(key, val)
+    def self.put(key, val)
+      parts = parse_key key
+      store_key = parts[1..-1].join('.')
+      st = store(parts[0], create: true)
+      st.transaction do
+        st[store_key] = val
+      end
+    end
+
+    private
+
+    def self.parse_key(key)
       parts = key.split '.'
       if parts.size < 2
         raise Error.new "Data key #{key.inspect} too short"
       end
-      st = store(parts[0], create: true)
-      store_key = parts[1..-1].join('.')
-      st.transaction do st[store_key] = val end
+      parts
     end
 
-    def self.store(name, create: false)
+    def self.store( name, create: false )
       data_dir = ENV.fetch 'CIDB_DATA', '.'
       fname = File.join data_dir, "#{name}.yaml"
-      unless File.exists?(fname) || create
-        raise Error.new "Data store #{fname.inspect} not found"
-      end
+      return unless File.exists?(fname) || create
       YAML::Store.new fname
     end
   end #Data
