@@ -1,0 +1,66 @@
+#!/usr/bin/env ruby
+#vim: sw=2 ts=2 sts=2:
+
+require 'cidb'
+require 'find'
+
+module CIDB
+  module JUnit
+    class Command
+      include CIDB::Logging
+      include CIDB::Sloppy
+
+      banner "USAGE: %{prog} [OPTIONS] [FILES]"
+
+      description <<~EOTXT
+        Find all junit files and injest them to the database. Generate CSV files
+        for the store, for easy loading into other tools.
+      EOTXT
+
+      def slop(opt)
+        opt.string "--csv-suites", "Where to write test suite .csv output",
+          default: "suites.csv"
+        opt.string "--csv-cases", "Where to write test case .csv output",
+          default: "cases.csv"
+      end
+
+      def main(opts, args)
+        dir = args.empty? ? '.' : args[0]
+        find_junit(dir).each do |path|
+          File.open(path, 'r') do |f|
+            junit File.open(f, 'r')
+          end
+          info "Injested junit: #{path.inspect}"
+        end
+      end
+
+      # Returns and Enumerator for files paths that are junit xml files
+      def find_junit(target_dir = '.')
+        Enumerator.new do |yielder|
+          Find.find(target_dir) do |path|
+            next if FileTest.directory?(path) || File.extname(path) != '.xml'
+            sax = IsJUnitSax.new
+            File.open(path, 'r') { |f| Ox.sax_parse sax, f }
+            next unless sax.junit?
+            info "Found junit: #{path.inspect}"
+            yielder << path
+          end
+        end
+      end
+
+      def junit(io)
+        csv = CSVWriter.new(
+          suite_file: @opts[:csv_suites],
+          case_file:  @opts[:csv_cases]
+        )
+        # TODO: db = DBWriter.new
+        sax = Sax.new csv 
+        Ox.sax_parse sax, io
+      rescue StandardError => err
+        fail! 2, err
+      end
+    end
+  end
+end
+
+CIDB::JUnit::Command.new.run if $0 == __FILE__

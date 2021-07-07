@@ -6,6 +6,25 @@ require 'ox'
 
 module CIDB
   module JUnit
+    # Detect if the file is a junit xml file.
+    # TODO: just merge into the parser and throw a NotJUnitError?
+    class IsJUnitSax < ::Ox::Sax
+      def initialize
+        @is_junit = false
+      end
+
+      def junit?
+        @is_junit
+      end
+
+      def start_element(name)
+        if name == :testsuites
+          # TODO: can we short circuit the parse at this point?
+          @is_junit = true
+        end
+      end
+    end
+
     class Sax < ::Ox::Sax
       attr_reader :tag_count, :counts
 
