@@ -128,12 +128,14 @@ scan-jenkins-build() {
   fi
 }
 
+# https://www.jenkins.io/doc/book/pipeline/jenkinsfile/#using-environment-variables
 scan-jenkins() {
   info Scanning Jenkins workspace
   [ -z "$CIDB_BUILD_ID" ] && CIDB_BUILD_ID="$BUILD_URL"
   cidb-data --put build.url "$BUILD_URL"
 }
 
+# https://docs.github.com/en/actions/reference/environment-variables
 scan-github() {
   info Scanning GitHub Workflow run
   [ -z "$CIDB_BUILD_ID" ] && CIDB_BUILD_ID="$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"

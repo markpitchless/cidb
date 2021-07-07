@@ -14,3 +14,5 @@ gem "rubocop", "~> 1.7"
 gem "sequel", "~> 5.46"
 
 gem "sqlite3", "~> 1.4"
+
+gem "pg", "~> 1.2"
