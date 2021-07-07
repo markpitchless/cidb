@@ -11,21 +11,48 @@ module CIDB
       Setup a new system. Installs schema in database.
     EOTXT
 
+    def slop(o)
+      o.boolean "--drop-tables", "Drop (instead of skipping) existing database tables"
+    end
+
     def main(opts, args)
       CIDB.connect
       load_schema
     end
 
     def load_schema
-      if DB.tables.include? :builds
-        info "Database schema exists, skipping setup"
-        return
-      end
-      DB.create_table :builds do
+      create_table :builds do
         String :build_id, primary_key: true
         String :url
       end
+      create_table :test_suites do
+        String   :build_id
+        String   :name
+        DateTime :timestamp
+        Integer  :tests
+        Integer  :failures
+        Integer  :errors
+        Integer  :time
+      end
+      create_table :test_cases do
+        String  :build_id
+        String  :classname
+        String  :name
+        Integer :time
+        Boolean :skipped
+        Boolean :failed
+      end
       info "Setup database schema: " + DB.tables.inspect
+    end
+
+    private
+
+    # Wrap DB.create_table with a skip on exists and logging
+    # TODO: Log if we dropped, created, skipped etc (or not worry)?
+    def create_table(name, &block)
+      DB.drop_table? name if @opts.drop_tables?
+      DB.create_table? name.to_sym, &block
+      info "Setup database table: #{name}"
     end
   end
 end

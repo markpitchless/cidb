@@ -18,6 +18,8 @@ module CIDB
       EOTXT
 
       def slop(opt)
+        opt.string "-b", "--build_id", "Id to link tests to",
+          default: ENV['CIDB_BUILD_ID']
         opt.string "--csv-suites", "Where to write test suite .csv output",
           default: "suites.csv"
         opt.string "--csv-cases", "Where to write test case .csv output",
@@ -25,11 +27,12 @@ module CIDB
       end
 
       def main(opts, args)
+        fail!(10, "No build_id, set CIDB_BUILD_ID or --build_id") unless opts.build_id?
+
+        CIDB.connect
         dir = args.empty? ? '.' : args[0]
         find_junit(dir).each do |path|
-          File.open(path, 'r') do |f|
-            junit File.open(f, 'r')
-          end
+          junit path
           info "Injested junit: #{path.inspect}"
         end
       end
@@ -48,16 +51,19 @@ module CIDB
         end
       end
 
-      def junit(io)
-        csv = CSVWriter.new(
-          suite_file: @opts[:csv_suites],
-          case_file:  @opts[:csv_cases]
-        )
-        # TODO: db = DBWriter.new
-        sax = Sax.new csv 
-        Ox.sax_parse sax, io
-      rescue StandardError => err
-        fail! 2, err
+      def junit(path)
+        File.open(path, 'r') do |io|
+          csv = CSVWriter.new(
+            suite_file: @opts[:csv_suites],
+            case_file:  @opts[:csv_cases]
+          )
+          Ox.sax_parse Sax.new(csv), io
+        end
+
+        File.open(path, 'r') do |io|
+          handler = Sax.new DBWriter.new(@opts[:build_id])
+          Ox.sax_parse handler, io
+        end
       end
     end
   end

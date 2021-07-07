@@ -99,6 +99,10 @@ module CIDB
       main @opts, @args if respond_to? :main # Dispatch to the including class
     rescue Slop::Error => err
       fail! 1, err
+    rescue CIDB::Error => err
+      fail! 23, err
+    #rescue StandardError => err
+    #  fail! 2, err
     end
 
   end #Sloppy
