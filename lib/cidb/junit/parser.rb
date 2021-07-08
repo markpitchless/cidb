@@ -6,26 +6,29 @@ require 'ox'
 
 module CIDB
   module JUnit
-    # Detect if the file is a junit xml file.
-    # TODO: just merge into the parser and throw a NotJUnitError?
-    class IsJUnitSax < ::Ox::Sax
-      def initialize
-        @is_junit = false
-      end
-
-      def junit?
-        @is_junit
-      end
-
-      def start_element(name)
-        if name == :testsuites
-          # TODO: can we short circuit the parse at this point?
-          @is_junit = true
-        end
-      end
-    end
-
-    class Sax < ::Ox::Sax
+    ##
+    # A class for parsing JUnit XML files.
+    # 
+    # You give the constructor a handler class and the parser will call methods
+    # on that handler for junit events, passing objects for cases and suites,
+    # with all the fields filled from the XML.
+    #
+    #   handler = JUnit::CSVWriter.new
+    #   File.open 'junit.xml', 'r' do |f|
+    #     JUnit::Parser.new(handler).parse(f)
+    #   end
+    # 
+    # Handler gets 3 callbacks called:
+    # 
+    #  def start_suite(suite) # Start of suite, before test cases
+    #  def end_suite(suite)   # Complete suite and cases
+    #  def on_case(tcase)     # Fires once for each complete TestCase
+    #
+    # * suite is a TestSuite instance
+    # * tcase is a TestCase instance
+    # * end_suite is generally what you want to hook
+    # * XXX: start_suite does NOT fire for empty suites
+    class Parser < ::Ox::Sax
       attr_reader :tag_count, :counts
 
       def initialize(handler=nil)
@@ -38,6 +41,10 @@ module CIDB
         @counts = Hash.new(0)
 
         @handler = handler
+      end
+
+      def parse(io)
+        Ox.sax_parse self, io
       end
 
       def inc(name, amt = 1)
@@ -81,7 +88,7 @@ module CIDB
           @case = nil
         end
       end
-    
+
       def attr(name, str)
         obj = nil
         case @tag_name
@@ -126,6 +133,6 @@ module CIDB
         @handler.on_case tcase if @handler
       end
 
-    end #Sax
+    end #Parser
   end #JUnit
 end #CIDB

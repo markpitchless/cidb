@@ -6,6 +6,23 @@ require 'find'
 
 module CIDB
   module JUnit
+    # Detect if the file is a junit xml file. Kind of ikky, but it works for now.
+    # TODO: just merge into the Parser and throw a NotJUnitError?
+    #   IsJUnitSax.new.junit?(path)
+    class IsJUnitSax < ::Ox::Sax
+      def junit?(path)
+        @is_junit = false
+        File.open(path, 'r') { |f| Ox.sax_parse self, f }
+        @is_junit
+      end
+
+      def start_element(name)
+        if name == :testsuites
+          @is_junit = true # TODO: can we short circuit the parse at this point?
+        end
+      end
+    end
+
     class Command
       include CIDB::Logging
       include CIDB::Sloppy
@@ -37,9 +54,9 @@ module CIDB
 
       def main(opts, args)
         fail!(10, "No build_id, set CIDB_BUILD_ID or --build_id") unless opts[:build_id]
+        dir = args.empty? ? '.' : args[0]
 
         CIDB.connect
-        dir = args.empty? ? '.' : args[0]
         find_junit(dir).each do |path|
           junit path
           info "Injested junit: #{path.inspect}"
@@ -51,9 +68,7 @@ module CIDB
         Enumerator.new do |yielder|
           Find.find(target_dir) do |path|
             next if FileTest.directory?(path) || File.extname(path) != '.xml'
-            sax = IsJUnitSax.new
-            File.open(path, 'r') { |f| Ox.sax_parse sax, f }
-            next unless sax.junit?
+            next unless IsJUnitSax.new.junit?(path)
             info "Found junit: #{path.inspect}"
             yielder << path
           end
@@ -62,16 +77,15 @@ module CIDB
 
       def junit(path)
         File.open(path, 'r') do |io|
+          Parser.new( DBWriter.new(@opts[:build_id]) ).parse(io)
+        end
+
+        File.open(path, 'r') do |io|
           csv = CSVWriter.new(
             suite_file: @opts[:csv_suites],
             case_file:  @opts[:csv_cases]
           )
-          Ox.sax_parse Sax.new(csv), io
-        end
-
-        File.open(path, 'r') do |io|
-          handler = Sax.new DBWriter.new(@opts[:build_id])
-          Ox.sax_parse handler, io
+          Parser.new(csv).parse(io)
         end
       end
     end
