@@ -17,9 +17,10 @@ USAGE:
   $progname [OPTIONS] [PATH]
 
 OPTIONS:
-  PATH     Directory path to scan. Default to current.
-  -f       Force. Remove existing scan and re-run.
-  -h       Show this help.
+  PATH        Directory path to scan. Default to current.
+  -b BUILD_ID Set build_id to injest against, determined from build otherwise
+  -f          Force. Remove existing scan and re-run.
+  -h          Show this help.
 
 DESCRIPTION:
 
@@ -77,8 +78,8 @@ scan() {
   cidb-data --put build.build_id "$CIDB_BUILD_ID"
   cidb-builds --put
 
-  # Find any junit files and parse
-  # cidb-injest-junit
+  # Find any junit files and parse into csv and insert into db
+  cidb-injest-junit
 
   # Sync to the S3 bucket, do this last, so we collect any files output above
   # Injestors (scanners?) write to cidb/ (CIDB_DATA), either their own files,
@@ -123,8 +124,8 @@ scan-jenkins-build() {
   info Scanning Jenkins build dir
   info TODO: parse build.xml, set build_id
   if [ -f junitResult.xml ]; then
-    info Found junit results
-    junitResult2junit junitResult.xml | cidb-junit
+    info Converting Jenikins result to junit
+    junitResult2junit junitResult.xml > junit.xml
   fi
 }
 
@@ -151,4 +152,3 @@ scan-general() {
 info Scanning "$SCAN_DIR"
 cd "$SCAN_DIR"
 scan
-cat cidb/build.yaml

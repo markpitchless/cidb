@@ -33,7 +33,7 @@ module CIDB
         Integer  :tests
         Integer  :failures
         Integer  :errors
-        Integer  :time
+        Float    :time
       end
 
       create_table :test_cases do
@@ -41,7 +41,7 @@ module CIDB
         String  :suite_name
         String  :classname
         String  :name
-        Integer :time
+        Float   :time
         Boolean :skipped
         Boolean :failed
       end

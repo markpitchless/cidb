@@ -20,7 +20,11 @@ module CIDB
       def inc_cases
         @case_count = @case_count + 1
       end
+
+      def timestamp
+        return nil if ! @timestamp || @timestamp&.empty?
+        @timestamp
+      end
     end
   end #JUnit
 end #CIDB
-  

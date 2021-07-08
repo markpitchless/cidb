@@ -64,6 +64,8 @@ module CIDB; module JUnit; class Result2JUnit
   # Start doc, run the parse, fill in the doc via the hook methods
   def output_junit
     @doc = Ox::Document.new :version => '1.0', encoding: 'UTF-8'
+    @testsuites = Ox::Element.new 'testsuites'
+    @doc << @testsuites
     sax  = JenkinsSax.new self
     Ox.sax_parse sax, ARGF.to_io
 
@@ -83,7 +85,7 @@ module CIDB; module JUnit; class Result2JUnit
     @ts[:failures]  = suite[:failures]
     @ts[:time]      = suite[:time]
     @ts[:timestamp] = suite[:timestamp]
-    @doc << @ts
+    @testsuites << @ts
   end
 
   def end_suite(suite);

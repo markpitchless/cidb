@@ -10,15 +10,24 @@ module CIDB
       include CIDB::Logging
       include CIDB::Sloppy
 
-      banner "USAGE: %{prog} [OPTIONS] [FILES]"
+      banner "USAGE: %{prog} [OPTIONS] [PATH]"
 
       description <<~EOTXT
-        Find all junit files and injest them to the database. Generate CSV files
-        for the store, for easy loading into other tools.
+        Search PATH (or . if non given ) find all junit files, then injest them
+        to the database. Generate CSV files for the store, for easy loading into
+        other tools.
+
+        All test data written to the database is linked to the build given by
+        CIDB_BUILD_ID (or -b arg), which must be set or the command fails.
+
+        Database access requires CIDB_DATABASE_URL to be set.
+
+        Generally you don't use this directly, it is called as part of the
+        scanning process.
       EOTXT
 
       def slop(opt)
-        opt.string "-b", "--build_id", "Id to link tests to",
+        opt.string "-b", "--build_id", "Build to link test data to. Default: CIDB_BUILD_ID",
           default: ENV['CIDB_BUILD_ID']
         opt.string "--csv-suites", "Where to write test suite .csv output",
           default: "suites.csv"
@@ -27,7 +36,7 @@ module CIDB
       end
 
       def main(opts, args)
-        fail!(10, "No build_id, set CIDB_BUILD_ID or --build_id") unless opts.build_id?
+        fail!(10, "No build_id, set CIDB_BUILD_ID or --build_id") unless opts[:build_id]
 
         CIDB.connect
         dir = args.empty? ? '.' : args[0]
@@ -37,7 +46,7 @@ module CIDB
         end
       end
 
-      # Returns and Enumerator for files paths that are junit xml files
+      # Returns an Enumerator for file paths that are junit xml files
       def find_junit(target_dir = '.')
         Enumerator.new do |yielder|
           Find.find(target_dir) do |path|
