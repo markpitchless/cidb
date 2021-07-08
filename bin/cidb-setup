@@ -25,6 +25,7 @@ module CIDB
         String :build_id, primary_key: true
         String :url
       end
+
       create_table :test_suites do
         String   :build_id
         String   :name
@@ -34,8 +35,10 @@ module CIDB
         Integer  :errors
         Integer  :time
       end
+
       create_table :test_cases do
         String  :build_id
+        String  :suite_name
         String  :classname
         String  :name
         Integer :time
