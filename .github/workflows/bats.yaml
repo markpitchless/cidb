@@ -1,0 +1,23 @@
+name: Bats
+on:
+  push:
+jobs:
+  bats-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: mig4/setup-bats@v1
+        with:
+          bats-version: 1.3.0
+
+      - uses: actions/checkout@v1
+      - uses: ruby/setup-ruby@v1 # .ruby-version
+        with:
+          bundler-cache: true # bundle install
+
+      - name: Test
+        run: bats -r --report-formatter junit test.bats/
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: junit
+          path: report.xml
