@@ -24,6 +24,9 @@ module CIDB
       create_table :builds do
         String :build_id, primary_key: true
         String :url
+        String :repository
+        String :branch
+        String :revision
       end
 
       create_table :test_suites do

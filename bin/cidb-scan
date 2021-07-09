@@ -65,10 +65,6 @@ scan() {
 
   env > "$CIDB_DATA"/env.dump
 
-  if git rev-parse >/dev/null; then
-    git rev-parse HEAD > "$CIDB_DATA"/HEAD
-  fi
-
   scan-builder
   if [[ -z "$CIDB_BUILD_ID" ]]; then
     info "ERROR: CIDB_BUILD_ID not set, can't identify the build"
@@ -76,6 +72,10 @@ scan() {
     exit 10
   fi
   cidb-data --put build.build_id "$CIDB_BUILD_ID"
+
+  scan-git-checkout
+
+  # Injest the build data, creating if needed
   cidb-builds --put
 
   # Find any junit files and parse into csv and insert into db
@@ -147,6 +147,18 @@ scan-general() {
   info Scanning general build directory
   [ -z "$CIDB_BUILD_ID" ] && CIDB_BUILD_ID="$(hostname):$(pwd)"
   cidb-data --put build.url "$(hostname):$(pwd)"
+}
+
+scan-git-checkout() {
+  git rev-parse >/dev/null || return 0
+  info Scanning git checkout
+
+  GIT_COMMIT="$(git rev-parse HEAD)"
+  git rev-parse HEAD > "$CIDB_DATA"/HEAD
+
+  cidb-data --put build.revision "$GIT_COMMIT"
+  cidb-data --put build.repository "$(git config remote.origin.url)"
+  cidb-data --put build.branch "$(git symbolic-ref HEAD)"
 }
 
 info Scanning "$SCAN_DIR"
