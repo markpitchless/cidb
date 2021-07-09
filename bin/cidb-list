@@ -1,0 +1,58 @@
+#!/usr/bin/env ruby
+#vim: sw=2 ts=2 sts=2:
+
+require 'cidb'
+
+module CIDB
+  class ListCommand
+    include CIDB::Sloppy
+
+    banner "%{prog} [OPTIONS] [LIST_PATH]"
+
+    description <<~EOTXT
+    List things in cidb. With no arguments, prints a list of paths you can list:
+
+      cidb list
+
+    Run with a path and options to list stuff from the db. Note default limit is
+    10 (to stop flodding your terminal) and can be controlled via the --limit
+    and --offset options.
+
+      cidb list builds
+      cidb list test_suites --limit 200
+      cidb list test_cases --offset=40
+    EOTXT
+
+    def slop(o)
+      o.integer "--limit", "Max number of records to show", default: 10
+      o.integer "--offset", "Record position to start listing from", default: 0
+      o.string "--build-id", "Filter by the given build id"
+    end
+
+    def main(opts, args)
+      CIDB.connect
+      return list_data_sets if args.empty?
+      list(opts, args)
+    end
+
+    def list_data_sets
+      puts DB.tables.join "\n"
+    end
+
+    def list(opts, args)
+      name = args[0]
+      fail!(10, "List #{name.inspect} not found") unless DB.table_exists?(name)
+
+      ds = DB[name.to_sym]
+      ds = ds.where(build_id: opts[:build_id]) if opts.build_id?
+      total = ds.count
+      ds = ds.limit(opts[:limit]).offset(opts[:offset])
+      ds.each do |b|
+        puts b.to_json
+      end
+      puts "#{name} #{opts[:offset]+1} to #{ds.count + opts[:offset]} of #{total}"
+    end
+  end
+end #CIDB
+
+CIDB::ListCommand.new.run

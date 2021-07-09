@@ -13,7 +13,7 @@ PATH="$DIR:$PATH"
 usage() {
 cat <<EOHELP
 USAGE:
-  $progname [OPTIONS]
+  $progname [COMMAND] [OPTIONS]
 
 OPTIONS:
   -h       Show this help"
@@ -28,8 +28,8 @@ recording all the details in a database and the artifacts in storage.
 This top level command provides help and dispatch to more specific commands.
 
 COMMANDS:
-  - scan
-  - injest
+  scan  - run in a build site to collect data
+  list  - list data collected from builds
 EOHELP
   exit 0
 }
