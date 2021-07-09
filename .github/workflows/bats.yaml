@@ -17,6 +17,14 @@ jobs:
       - name: Test
         run: bats -r --report-formatter junit test.bats/
 
+      # Run the current version over it's own build
+      - name: CIDB self scan
+        env:
+          CIDB_DATABASE_URL: ${{ secrets.CIDB_DATABASE_URL }}
+        run: |
+          bundle exec bin/cidb scan
+          ls -lh cidb/
+
       - uses: actions/upload-artifact@v2
         with:
           name: junit
