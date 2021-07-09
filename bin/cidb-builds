@@ -27,7 +27,7 @@ module Builds
     def list(opts, args)
       builds = DB[:builds]
       builds.each do |b|
-        puts b
+        puts b.to_json
       end
       puts "#{builds.count} builds"
     end
