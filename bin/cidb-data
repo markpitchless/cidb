@@ -46,6 +46,11 @@ module CIDB
       private
 
       def main_get(args)
+        if args.size == 1
+          puts "%s" % Data.fetch(args[0])
+          return
+        end
+
         args.each do |k|
           v = Data.fetch k
           puts "%s: %s" % [k, v]
