@@ -2,6 +2,8 @@
 #vim: sw=2 ts=2 sts=2:
 
 require 'cidb'
+require 'table_print'
+require 'csv'
 
 module CIDB
   class ListCommand
@@ -27,6 +29,8 @@ module CIDB
       o.integer "--limit", "Max number of records to show", default: 10
       o.integer "--offset", "Record position to start listing from", default: 0
       o.string "--build-id", "Filter by the given build id"
+      o.boolean "--json"
+      o.boolean "--csv"
     end
 
     def main(opts, args)
@@ -51,12 +55,32 @@ module CIDB
 
       ds = DB[name.to_sym]
       ds = ds.where(build_id: opts[:build_id]) if opts.build_id?
-      total = ds.count
       ds = ds.limit(opts[:limit]).offset(opts[:offset])
+
+      return json(ds) if opts.json?
+      return csv(ds)  if opts.csv?
+      return table(name, ds)
+    end
+
+    def json(ds)
       ds.each do |b|
         puts b.to_json
       end
-      puts "#{name} #{opts[:offset]+1} to #{ds.count + opts[:offset]} of #{total}"
+    end
+
+    def csv(ds)
+      names = ds.columns
+      puts CSV.generate_line(names)
+      ds.each do |r|
+        puts CSV.generate_line(r.values_at(*names))
+      end
+    end
+
+    def table(name, ds) # Terminal table for humans
+      total = ds.count
+      tp.set :max_width, 60
+      tp ds
+      puts "#{name} #{@opts[:offset]+1} to #{ds.count + @opts[:offset]} of #{total}"
     end
   end
 end #CIDB

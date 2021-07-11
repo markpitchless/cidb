@@ -16,3 +16,5 @@ gem "sequel", "~> 5.46"
 gem "sqlite3", "~> 1.4"
 
 gem "pg", "~> 1.2"
+
+gem "table_print", "~> 1.5"
