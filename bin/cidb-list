@@ -36,7 +36,13 @@ module CIDB
     end
 
     def list_data_sets
-      puts DB.tables.join "\n"
+      [
+        { name: 'builds',      ds: DB[:builds] },
+        { name: 'test_suites', ds: DB[:test_suites] },
+        { name: 'test_cases',  ds: DB[:test_cases] },
+      ].each_with_index do |q, i|
+        puts "#{i+1}\t#{q[:ds].count}\t#{q[:name]} "
+      end
     end
 
     def list(opts, args)
