@@ -59,6 +59,12 @@ if [ ! -d "$SCAN_DIR" ]; then
   exit 10
 fi
 
+# The core scan entrypoint, expects to run in the directory to be scanned (after cd).
+# Sets up the data store, setting CIDB_DATA. Runs some checks before running
+# the main scan and finally runs injest.
+# Scanners work with the files in the build site, writing data to files there or
+# to CIDB_DATA, ready for injest. ie they run locally and don't talk to S3 or
+# the DB.
 scan() {
   setup-data
   cidb-data --put build.scan-start-time "$(date +%Y-%m-%dT%H:%M:%S%z)"
@@ -78,13 +84,7 @@ scan() {
   # Injest the build data, creating if needed
   cidb-builds --put
 
-  # Find any junit files and parse into csv and insert into db
-  cidb-injest-junit
-
-  # Sync to the S3 bucket, do this last, so we collect any files output above
-  # Injestors (scanners?) write to cidb/ (CIDB_DATA), either their own files,
-  # or using cidb-data. We hover that up at the end.
-  # cidb-injest-s3 | cidb-injest-files | cidb-injest-artifacts
+  injest
 
   cidb-data --put build.scan-end-time "$(date +%Y-%m-%dT%H:%M:%S%z)"
 }
@@ -159,6 +159,18 @@ scan-git-checkout() {
   cidb-data --put build.revision "$GIT_COMMIT"
   cidb-data --put build.repository "$(git config remote.origin.url)"
   cidb-data --put build.branch "$(git symbolic-ref HEAD)"
+}
+
+# Injest happens after all the scanners have run. Injesters fill the database
+# and file storage.
+# TODO: have this run $PATH/cidb-injest-*
+injest() {
+  # Find any junit files and parse into csv and insert into db
+  cidb-injest-junit
+
+  # Sync to the S3 bucket, do this last, so we collect any data written or files
+  # output by scanners or injestors. Hover up anything we want to keep.
+  # cidb-injest-s3 | cidb-injest-files | cidb-injest-artifacts
 }
 
 info Scanning "$SCAN_DIR"
