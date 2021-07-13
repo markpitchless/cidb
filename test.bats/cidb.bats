@@ -6,7 +6,7 @@ load bats_helper
   run cidb
   [ "$status" -eq 0 ]
   [ "${lines[0]}" == 'USAGE:' ]
-  [ "${lines[1]}" == '  cidb [OPTIONS]' ]
+  [ "${lines[1]}" == '  cidb [COMMAND] [OPTIONS]' ]
 }
 
 @test "Dispatch to scan --help" {
