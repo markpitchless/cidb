@@ -3,67 +3,79 @@
 
 require 'cidb'
 
-module CIDB
-  module Data
-    class Command
-      include CIDB::Sloppy
+module CIDB; module Data
+  class Command
+    include CIDB::Sloppy
 
-      banner "USAGE: %{prog} [OPTIONS] [--put|--get] [KEY] [VALUE]"
+    banner "USAGE: %{prog} [OPTIONS] [--put|--get] [KEY] [VALUE]"
 
-      description <<~EOTXT
-        Read and write values for keys in data files. KEY is a dotted path, the
-        first part is the data store file to use. Maps to $KEY.yaml. The rest is
-        the key name in the store.
+    description <<~EOTXT
+    Read and write values for keys in data files. KEY is a dotted path, the
+    first part is the data store file to use. Maps to $KEY.yaml. The rest is
+    the key name in the store.
 
-        To get keys and write the values to stdout:
+    To get keys and write the values to stdout:
 
-          cidb-data build.id
-          cidb-data --get cidb.s3-bucket
-          cidb-data config.include config.exclude
+      cidb-data build.id
+      cidb-data --get cidb.s3-bucket
+      cidb-data config.include config.exclude
 
-        To store values in keys:
+    To store values in keys:
 
-          cidb-data --put build.size 42
+      cidb-data --put build.size 42
 
-        The data store file is accessed using a transaction that locks it for
-        any other access while the command runs. This serilises access allowing
-        parallel processes to read and write data keys happily.
-      EOTXT
+    The data store file is accessed using a transaction that locks it for
+    any other access while the command runs. This serilises access allowing
+    parallel processes to read and write data keys happily.
 
-      def slop(opt)
-        opt.bool "--get", "Get VALUE for KEY. Default if no --get or --put.", default: false
-        opt.bool "--put", "Write VALUE to KEY.", default: false
-        # --file FILE Use data file FILE, instead of deriving from the KEY
-        # --default VAL Value to output if KEY not found
+    TODO:
+
+      cidb-data --put --unless build.title "Hello"  # Only put if not there
+      cidb-data --put FOO --or BAR
+
+      git symbolic-ref | cidb-data --put build.branch -
+
+    This avoids the issue with hidden exit codes when using:
+    cidb-data --put build.branch "$(git symbolic-ref HEAD)"
+
+    With the --root option, we can set the prefix used to resolve all keys:
+
+      cidb-data --root=config include exclude # config.include config.exclude
+    EOTXT
+
+    def slop(opt)
+      opt.bool "--get", "Get VALUE for KEY. Default if no --get or --put.", default: false
+      opt.bool "--put", "Write VALUE to KEY.", default: false
+      # --file FILE Use data file FILE, instead of deriving from the KEY
+      # --default VAL Value to output if KEY not found
+    end
+
+    def main(opts, args)
+      return if args.empty?
+      return main_put args if opts.put?
+      main_get args
+    end
+
+    private
+
+    def main_get(args)
+      if args.size == 1
+        puts "%s" % Data.fetch(args[0])
+        return
       end
 
-      def main(opts, args)
-        return if args.empty?
-        return main_put args if opts.put?
-        main_get args
+      args.each do |k|
+        v = Data.fetch k
+        puts "%s: %s" % [k, v]
       end
+    end
 
-      private
-
-      def main_get(args)
-        if args.size == 1
-          puts "%s" % Data.fetch(args[0])
-          return
-        end
-
-        args.each do |k|
-          v = Data.fetch k
-          puts "%s: %s" % [k, v]
-        end
-      end
-
-      def main_put(args)
-        args.each_slice(2) do |k,v|
-          Data.put k, v
-        end
+    def main_put(args)
+      args.each_slice(2) do |k,v|
+        Data.put k, v
       end
     end
   end
-end
+end; end #CIDB::Data
 
 CIDB::Data::Command.new.run
