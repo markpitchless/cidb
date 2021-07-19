@@ -18,7 +18,7 @@ jobs:
         run: bats -r --report-formatter junit test.bats/
 
       - name: Debug
-        continue-on-fail: true
+        continue-on-error: true
         run: |
           echo "" | nc -v portquiz.net 5432
           echo "" | nc -v cidb-actions.cazjko7hzwhe.eu-west-1.rds.amazonaws.com 5432
