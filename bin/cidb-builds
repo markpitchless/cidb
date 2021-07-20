@@ -33,6 +33,7 @@ module Builds
     end
 
     # TODO: if given build_url, use that as id if no id
+    # TODO: Check the Storage, create key if needed, merge that json?
     def put_build(opts, args)
       id = opts[:build_id] || Data.fetch('build.build_id', nil) || fail!(10, "No build_id given")
       data = {

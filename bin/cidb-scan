@@ -164,13 +164,14 @@ scan-git-checkout() {
 # Injest happens after all the scanners have run. Injesters fill the database
 # and file storage.
 # TODO: have this run $PATH/cidb-injest-*
+# TODO: make optional, so easier to test scan locally
 injest() {
   # Find any junit files and parse into csv and insert into db
   cidb-injest-junit
 
   # Sync to the S3 bucket, do this last, so we collect any data written or files
   # output by scanners or injestors. Hover up anything we want to keep.
-  # cidb-injest-s3 | cidb-injest-files | cidb-injest-artifacts
+  # cidb-injest-artifacts
 }
 
 info Scanning "$SCAN_DIR"
