@@ -17,6 +17,8 @@ jobs:
           --health-retries 5
         ports:
           - 5432:5432
+    env:
+      CIDB_DATABASE_URL: postgres://postgres:password@localhost:5432/postgres
     steps:
       - uses: mig4/setup-bats@v1
         with:
@@ -37,14 +39,13 @@ jobs:
 
       # Run the current version over it's own build
       - name: CIDB self scan
-        env:
-          CIDB_DATABASE_URL: postgres://postgres:password@localhost:5432/postgres
         run: |
           bundle exec bin/cidb setup
           bundle exec bin/cidb scan
           ls -lh cidb/
           cat cidb/build.yaml
-
+      - name: CIDB list
+        run: |
           bundle exec bin/cidb list
           bundle exec bin/cidb list builds
           bundle exec bin/cidb list test_suites
