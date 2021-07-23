@@ -33,10 +33,10 @@ module CIDB
         String   :build_id
         String   :name
         DateTime :timestamp
-        Integer  :tests
-        Integer  :failures
-        Integer  :errors
-        Float    :time
+        Integer  :tests,    null: false, default: 0
+        Integer  :failures, null: false, default: 0
+        Integer  :errors,   null: false, default: 0
+        Float    :time,     null: false, default: 0.0
       end
 
       create_table :test_cases do
@@ -45,8 +45,8 @@ module CIDB
         String  :classname
         String  :name
         Float   :time
-        Boolean :skipped
-        Boolean :failed
+        Boolean :skipped, null:false, default: false
+        Boolean :failed,  null:false, default: false
       end
       info "Setup database schema: " + DB.tables.inspect
     end

@@ -19,7 +19,7 @@ module CIDB
         @name      = ""
         @time      = nil
         @skipped   = false
-        @skipped   = false
+        @failed    = false
         @failure   = TestCaseFailure.new
       end
 
@@ -28,11 +28,17 @@ module CIDB
       end
 
 
-      def pass?; ! @skipped || ! @failed end
+      def pass?
+        ! @skipped || ! @failed
+      end
 
-      alias :ok? :pass?
 
-      def fail?; @failed; end
+      def failed?
+        @failed
+      end
+
+      alias :ok?   :pass?
+      alias :fail? :failed?
     end #TestCase
 
   end #JUnit
