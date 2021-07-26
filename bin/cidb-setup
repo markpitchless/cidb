@@ -32,6 +32,7 @@ module CIDB
       create_table :test_suites do
         String   :build_id
         String   :name
+        primary_key [:build_id, :name]
         DateTime :timestamp
         Integer  :tests,    null: false, default: 0
         Integer  :failures, null: false, default: 0
@@ -44,9 +45,10 @@ module CIDB
         String  :suite_name
         String  :classname
         String  :name
-        Float   :time
-        Boolean :skipped, null:false, default: false
-        Boolean :failed,  null:false, default: false
+        primary_key [:build_id, :suite_name, :classname, :name]
+        Float   :time,    null: false, default: 0.0
+        Boolean :skipped, null: false, default: false
+        Boolean :failed,  null: false, default: false
       end
       info "Setup database schema: " + DB.tables.inspect
     end
