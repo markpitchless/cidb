@@ -126,6 +126,7 @@ scan-builder() {
 scan-jenkins-build() {
   info Scanning Jenkins build dir
   info TODO: parse build.xml, set build_id
+  [ -z "$CIDB_BUILD_ID" ] && CIDB_BUILD_ID="jenkins:$(pwd)"
   if [ -f junitResult.xml ]; then
     info Converting Jenikins result to junit
     junitResult2junit junitResult.xml > junit.xml
