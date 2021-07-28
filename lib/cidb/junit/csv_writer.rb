@@ -6,7 +6,7 @@ require 'csv'
 module CIDB
   module JUnit
     ##
-    # CSVWriter - a CIDB::JUnit handler to write suites and cases CSV files.
+    # CIDB::JUnit handler to write suites and cases CSV files.
     class CSVWriter
       attr_accessor :suite_file, :case_file, :append
 

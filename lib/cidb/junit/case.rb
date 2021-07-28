@@ -12,9 +12,10 @@ module CIDB
 
     class TestCase
       attr_accessor :classname, :name, :time, :skipped, :failed
-      attr_reader   :failure
+      attr_reader   :suite, :failure
 
-      def initialize
+      def initialize(suite=nil)
+        @suite     = suite
         @classname = ""
         @name      = ""
         @time      = nil
@@ -29,6 +30,7 @@ module CIDB
 
       def to_row
         {
+          suite_name: @suite.name.to_s,
           classname: classname.to_s,
           name:      name.to_s,
           time:      time.to_i,

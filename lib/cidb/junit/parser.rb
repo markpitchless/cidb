@@ -18,16 +18,23 @@ module CIDB
     #     JUnit::Parser.new(handler).parse(f)
     #   end
     # 
-    # Handler gets 3 callbacks called:
-    # 
-    #  def start_suite(suite) # Start of suite, before test cases
-    #  def end_suite(suite)   # Complete suite and cases
-    #  def on_case(tcase)     # Fires once for each complete TestCase
+    # Handler gets 3 callbacks called repeatedly:
+    #
+    #   def start_suite(suite) # Start of suite, before test cases
+    #   def end_suite(suite)   # Complete suite and cases
+    #   def on_case(tcase)     # Fires once for each complete TestCase
     #
     # * suite is a TestSuite instance
     # * tcase is a TestCase instance
     # * end_suite is generally what you want to hook
     # * XXX: start_suite does NOT fire for empty suites
+    #
+    # If you want to do some setup or teardown, aggregation etc, there are two
+    # hooks that only get called once each for the parse:
+    #
+    #   def start_parse(parser) # After file open, but before parse
+    #   def end_parse(parser)   # After all XML parsing down
+    #
     class Parser < ::Ox::Sax
       attr_reader :tag_count, :counts
 
@@ -44,7 +51,9 @@ module CIDB
       end
 
       def parse(io)
+        start_parse
         Ox.sax_parse self, io
+        end_parse
       end
 
       def inc(name, amt = 1)
@@ -62,7 +71,7 @@ module CIDB
         when :testcase
           inc :cases
           @suite.inc_cases
-          @case = TestCase.new
+          @case = TestCase.new(@suite)
         when :skipped
           @case.skipped = true if @case
         when :failure
@@ -114,6 +123,17 @@ module CIDB
       protected
 
       # Hooks for sub classers to do stuff with the parsed out data
+
+      # Called at the start, after opening the file, but before any parsing happens.
+      def start_parse()
+        @handler.start_parse(self) if @handler&.respond_to?(:start_parse)
+      end
+
+      # Called once the entire XML parse is complete.
+      # Note, currently not guaranteed to be called if the parse throws.
+      def end_parse()
+        @handler.end_parse(self) if @handler&.respond_to?(:end_parse)
+      end
 
       # Called with a TestSuite instance after reading the suite and it's
       # properties but before seeing and test cases.
