@@ -62,11 +62,23 @@ module CIDB
       assert do counted_h(:apples, :oranges) == { apples: 1, oranges: 2 } end
     end
 
-    test "reset_counts" do
+    test "reset_counts no args - reset all" do
       inc :apples
       assert do counted(:apples) == 1 end
       reset_counts
       assert do counted(:apples) == 0 end
+    end
+
+    test "reset_counts with args" do
+      inc :foo
+      inc :bar
+      inc :baz
+      assert do counted(:foo, :bar, :baz) == [1,1,1] end
+      reset_counts :foo
+      assert do counted(:foo, :bar, :baz) == [0,1,1] end
+      inc :foo
+      reset_counts :bar, :baz
+      assert do counted(:foo, :bar, :baz) == [1,0,0] end
     end
   end
 end

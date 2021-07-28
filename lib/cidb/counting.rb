@@ -3,11 +3,12 @@
 
 module CIDB
   ##
-  # Mixin to add methods to count things.
+  # Mixin to add methods for counting things.
   #
-  # It is pretty common for classes doing scanning, importy type things to need
-  # to keep counts of things, items parsed, number skipped etc. Just import
-  # Counting, call inc to count and counted to get the count.
+  # It is pretty common for classes doing scanning, import type work to need to
+  # keep (integer) counts of things. Items parsed, number skipped, failed,
+  # passed etc. Just import Counting, call inc to count and counted to get the
+  # count.
   #
   #   class FooImporter
   #     include CIDB::Counting
@@ -49,7 +50,7 @@ module CIDB
   #
   # Note1: Internally this is a Hash (@counts), but that is not exposed in the
   # public api and may change. If you want a hash of the currents counts, call
-  # `counted_h`.
+  # `counted_h`. If you need non counting symantics, this mod is not for you.
   #
   # Note2: Not currently thread safe. It should be! The uses cases will commenly
   # be threaded. Need to decide symantics of threads (per thead vs thread shared
@@ -75,20 +76,30 @@ module CIDB
 
     alias :dec :decrement
 
-    def reset_counts
-      counts.each_key { |k| @counts[k] = 0 }
+    ##
+    # Reset counters (to zero).
+    # With no args reset all counters. With args, reset only the named counters.
+    def reset_counts(*args)
+      if args.empty?
+        counts.each_key { |k| @counts[k] = 0 }
+      else
+        args.each { |k| @counts[k] = 0 }
+      end
     end
 
     ##
-    # Returns the number counted for the passed count keys.
-    # One arg, return single count.
-    # multiple names, returns array of counts.
+    # Returns the number counted for the passed keys. All keys have to_sym
+    # called to get the actual key to look up.
+    # One arg, return single count. Multiple names, returns array of counts.
     def counted(*keys)
       return if keys.empty?
       return counts[keys[0].to_sym] if keys.size == 1
       ( keys.map { |k| counts[k.to_sym] } )
     end
 
+    ##
+    # Return a new hash with the current counts. All keys are symbols.
+    # With aguments, the hash only contains those keys (is sliced).
     def counted_h(*keys)
       return counts.clone if keys.empty?
       counts.slice(*keys)
