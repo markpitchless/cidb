@@ -27,6 +27,15 @@ module CIDB
         "<JUnit::TestCase #{classname.to_s.inspect} #{name.to_s.inspect} #{ok? ? 'Ok' : fail? ? 'Fail' : 'Skip'} in #{time}s>"
       end
 
+      def to_row
+        {
+          classname: classname.to_s,
+          name:      name.to_s,
+          time:      time.to_i,
+          skipped:   skipped,
+          failed:    failed
+        }
+      end
 
       def pass?
         ! @skipped || ! @failed

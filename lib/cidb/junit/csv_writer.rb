@@ -5,30 +5,38 @@ require 'csv'
 
 module CIDB
   module JUnit
+    ##
+    # CSVWriter - a CIDB::JUnit handler to write suites and cases CSV files.
     class CSVWriter
+      attr_accessor :suite_file, :case_file, :append
+
       def initialize(
         suite_file: 'suites.csv',
         case_file:  'cases.csv',
         append:     false
       )
-        mode = append ? 'a' : 'w'
-        @suite_csv = CSV.open suite_file, mode
-        @case_csv  = CSV.open case_file, mode
-        unless append
-          @suite_csv << %w[name timestamp tests failures errors time]
-          @case_csv  << %w[classname name time skipped failed]
-        end
+        @append = append
+        @suite_file = suite_file
+        @case_file  = case_file
       end
 
       def start_suite(suite)
+        unless @suite_csv
+          @suite_csv = CSV.open suite_file, (append ? 'a' : 'w')
+          @suite_csv << suite.to_row.keys unless append
+        end
       end
 
       def end_suite(s)
-        @suite_csv << [s.name, s.timestamp, s.tests, s.failures, s.errors, s.time]
+        @suite_csv << s.to_row.values
       end
 
       def on_case(c)
-        @case_csv << [c.classname, c.name, c.time, c.skipped, c.failed]
+        unless @case_csv
+          @case_csv = CSV.open case_file, (append ? 'a' : 'w')
+          @case_csv << c.to_row.keys unless append
+        end
+        @case_csv << c.to_row.values
       end
     end
   end #JUnit

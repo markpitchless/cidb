@@ -21,28 +21,18 @@ module CIDB
       end
 
       def end_suite(s)
-        CIDB::DB[:test_suites].insert_conflict.insert({
-          build_id: @build_id.to_s,
-          name: s.name.to_s,
-          timestamp: s.timestamp,
-          tests: s.tests.to_i,
-          failures: s.failures.to_i,
-          errors: s.errors.to_i,
-          time: s.time.to_i
-        })
+        row = s.to_row
+        row[:build_id] = @build_id.to_s
+        CIDB::DB[:test_suites].insert_conflict.insert(row)
+
         @current_suite = nil
       end
 
       def on_case(c)
-        CIDB::DB[:test_cases].insert_conflict.insert({
-          build_id: @build_id,
-          suite_name: @current_suite&.name.to_s,
-          classname: c.classname.to_s,
-          name: c.name.to_s,
-          time: c.time.to_i,
-          skipped: c.skipped,
-          failed: c.failed
-        })
+        row = c.to_row
+        row[:build_id]   = @build_id.to_s
+        row[:suite_name] = @current_suite&.name.to_s
+        CIDB::DB[:test_cases].insert_conflict.insert(row)
       end
     end
   end #JUnit
