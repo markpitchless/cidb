@@ -12,6 +12,7 @@ module CIDB
     # construction to have it append to existing files (if found).
     class CSVWriter
       include Logging
+      include Counting
 
       attr_accessor :suite_file, :case_file, :append
 
@@ -25,6 +26,10 @@ module CIDB
         @case_file  = case_file
       end
 
+      def end_parse(_parser)
+        info "CSV: Wrote %i test suites and %i test cases" % counted(:suites, :cases)
+      end
+
       def start_suite(suite)
         unless @suite_csv
           @suite_csv = CSV.open suite_file, (append ? 'a' : 'w')
@@ -35,6 +40,7 @@ module CIDB
 
       def end_suite(s)
         @suite_csv << s.to_row.values
+        inc :suites
       end
 
       def on_case(c)
@@ -43,6 +49,7 @@ module CIDB
           @case_csv << c.to_row.keys unless append
         end
         @case_csv << c.to_row.values
+        inc :cases
       end
     end
   end #JUnit

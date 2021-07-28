@@ -49,7 +49,9 @@ module CIDB
     #     parser.parse(f)
     #   end
     class Parser < ::Ox::Sax
-      attr_reader :tag_count, :counts
+      include Counting
+
+      attr_reader :tag_count
 
       def initialize(*handlers)
         @handlers = handlers
@@ -67,10 +69,6 @@ module CIDB
         start_parse
         Ox.sax_parse self, io
         end_parse
-      end
-
-      def inc(name, amt = 1)
-        @counts[name] = @counts[name] + amt
       end
 
       # Ox XML.

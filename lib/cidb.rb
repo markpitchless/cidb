@@ -3,6 +3,7 @@
 
 require_relative "cidb/version"
 require_relative "cidb/logging"
+require_relative "cidb/counting"
 require_relative "cidb/data"
 require_relative "cidb/sloppy"
 require_relative "cidb/junit/suite"

@@ -10,24 +10,15 @@ module CIDB
     # insert is skipped. Re-running does not produce duplicates.
     class DBWriter
       include Logging
+      include Counting
 
       def initialize(id)
         @build_id = id
-        @counts = Hash.new(0)
       end
 
-      def inc(key)
-        @counts[key.to_sym] += 1
-      end
-
-      def counter(*keys)
-        return if keys.empty?
-        return @counts[keys[0].to_sym] if keys.size == 1
-        ( keys.map { |k| @counts[k.to_sym] } )
-      end
-
-      def end_parse(_parser)
-        info "Loaded %i test suites and %i test cases into database" % counter(:test_suites, :test_cases)
+      def end_parse(parser)
+        info "DB: Loaded %i test suites (of %i found)" % [counted(:test_suites), parser.counted(:suites)]
+        info "DB: Loaded %i test cases (of %i found)" % [counted(:test_cases), parser.counted(:cases)]
       end
 
       def end_suite(s)
