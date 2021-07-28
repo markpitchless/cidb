@@ -1,0 +1,60 @@
+name: Self Scan
+on:
+  push:
+jobs:
+  self-scan-test:
+    runs-on: ubuntu-latest
+    services: # Sidecar postgres for the self scan to use
+      postgres:
+        image: postgres:12.7
+        env:
+          POSTGRES_PASSWORD: password
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    env:
+      CIDB_DATABASE_URL: postgres://postgres:password@localhost:5432/postgres
+    steps:
+      - uses: actions/checkout@v1
+      - uses: mig4/setup-bats@v1
+        with:
+          bats-version: 1.3.0
+      - uses: ruby/setup-ruby@v1 # .ruby-version
+        with:
+          bundler-cache: true # bundle install
+
+      # Use the bats test suite to generate a real looking build, with junit
+      # This is NOT the test, see bats.yaml for the real run.
+      - name: Generate some test data
+        continue-on-error: true
+        run: bats -r --report-formatter junit test.bats/
+
+      # Run the current version over it's own build
+      - name: CIDB self scan
+        run: |
+          bundle exec bin/cidb setup
+          bundle exec bin/cidb scan
+          ls -lh cidb/
+          cat cidb/build.yaml
+
+      - name: cidb list
+        run: |
+          bundle exec bin/cidb list
+
+      - name: cidb list builds
+        run: |
+          bundle exec bin/cidb list builds
+
+      - name: cidb list test_suites and test_cases
+        run: |
+          bundle exec bin/cidb list test_suites
+          bundle exec bin/cidb list test_cases
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: cidb
+          path: cidb/**
