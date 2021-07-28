@@ -64,6 +64,8 @@ module CIDB
         end
       end
 
+      protected
+
       # Returns an Enumerator for file paths that are junit xml files
       def find_junit(target_dir = '.')
         Enumerator.new do |yielder|
@@ -77,16 +79,10 @@ module CIDB
       end
 
       def junit(path)
+        db_h  = DBWriter.new @opts[:build_id]
+        csv_h = CSVWriter.new suite_file: @opts[:csv_suites], case_file: @opts[:csv_cases]
         File.open(path, 'r') do |io|
-          Parser.new( DBWriter.new(@opts[:build_id]) ).parse(io)
-        end
-
-        File.open(path, 'r') do |io|
-          csv = CSVWriter.new(
-            suite_file: @opts[:csv_suites],
-            case_file:  @opts[:csv_cases]
-          )
-          Parser.new(csv).parse(io)
+          Parser.new( csv_h, db_h ).parse(io)
         end
       rescue Sequel::Error => err
         fail! 12, "Database error: #{err.class}: #{err}"

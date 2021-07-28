@@ -13,7 +13,6 @@ module CIDB
 
       def initialize(id)
         @build_id = id
-        @current_suite = nil
         @counts = Hash.new(0)
       end
 
@@ -21,17 +20,14 @@ module CIDB
         @counts[key.to_sym] += 1
       end
 
-      def count(key)
-        @counts[key.to_sym]
+      def counter(*keys)
+        return if keys.empty?
+        return @counts[keys[0].to_sym] if keys.size == 1
+        ( keys.map { |k| @counts[k.to_sym] } )
       end
 
       def end_parse(_parser)
-        info "Loaded %i test suites and %i test cases into database" % [
-          count(:test_suites), count(:test_cases) ]
-      end
-
-      def start_suite(suite)
-        @current_suite = suite
+        info "Loaded %i test suites and %i test cases into database" % counter(:test_suites, :test_cases)
       end
 
       def end_suite(s)
@@ -39,8 +35,6 @@ module CIDB
         row[:build_id] = @build_id.to_s
         CIDB::DB[:test_suites].insert_conflict.insert(row)
         inc :test_suites
-
-        @current_suite = nil
       end
 
       def on_case(c)

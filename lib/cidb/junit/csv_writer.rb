@@ -7,7 +7,12 @@ module CIDB
   module JUnit
     ##
     # CIDB::JUnit handler to write suites and cases CSV files.
+    #
+    # By default will overwrite existing files with new data. Set append:true on
+    # construction to have it append to existing files (if found).
     class CSVWriter
+      include Logging
+
       attr_accessor :suite_file, :case_file, :append
 
       def initialize(
@@ -24,6 +29,7 @@ module CIDB
         unless @suite_csv
           @suite_csv = CSV.open suite_file, (append ? 'a' : 'w')
           @suite_csv << suite.to_row.keys unless append
+          info (append ? 'Appending to' : 'Opening new') + " CSV file: #{suite_file}"
         end
       end
 

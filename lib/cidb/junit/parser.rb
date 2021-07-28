@@ -7,11 +7,11 @@ require 'ox'
 module CIDB
   module JUnit
     ##
-    # A class for parsing JUnit XML files.
+    # Parse JUnit XML files with custom handlers.
     # 
-    # You give the constructor a handler class and the parser will call methods
-    # on that handler for junit events, passing objects for cases and suites,
-    # with all the fields filled from the XML.
+    # You give the constructor 1 or more handler instances and the parser will
+    # call methods on those handler for junit events, passing objects for cases
+    # and suites, with all the fields filled from the XML.
     #
     #   handler = JUnit::CSVWriter.new
     #   File.open 'junit.xml', 'r' do |f|
@@ -35,10 +35,25 @@ module CIDB
     #   def start_parse(parser) # After file open, but before parse
     #   def end_parse(parser)   # After all XML parsing down
     #
+    # The parser is Sax based for speed and low memory footprint when parsing
+    # large junit files (10k+ cases) and so does not carry much state. TestCase
+    # and TestSuite instances are discarded after use (passing to handlers).
+    # TestCase has a link to its owning suite, but the suites have no links to
+    # cases. The parser holds on the current suite while parsing it's cases.
+    #
+    # If you pass multiple handlers to the initializer, the parse will call each
+    # handler, in order for each event. Lets you do lots of work in one pass.
+    #
+    #   parser = JUnit::Parser.new(JUnit::CSVWriter.new, JUunit::DBWriter.new)
+    #   File.open 'junit.xml', 'r' do |f|
+    #     parser.parse(f)
+    #   end
     class Parser < ::Ox::Sax
       attr_reader :tag_count, :counts
 
-      def initialize(handler=nil)
+      def initialize(*handlers)
+        @handlers = handlers
+
         @tag_count   = Hash.new(0) 
         @tag_name    = ""   # last seen tag name, to use when extracting text
         @prop_name   = nil  # last seen name value of <property name=""
@@ -46,8 +61,6 @@ module CIDB
         @case        = nil  # Set to current TestCase when inside <case>
 
         @counts = Hash.new(0)
-
-        @handler = handler
       end
 
       def parse(io)
@@ -60,6 +73,7 @@ module CIDB
         @counts[name] = @counts[name] + amt
       end
 
+      # Ox XML.
       def start_element(name)
         @tag_name = name
         @tag_count[name] = @tag_count[name] + 1 
@@ -79,7 +93,7 @@ module CIDB
         end
       end
 
-      # Offset "starting" the object until we have filled in the attrs!
+      # Ox XML. Offset "starting" the object until we have filled in the attrs!
       def attrs_done();
         case @tag_name 
         when :testsuite
@@ -87,6 +101,7 @@ module CIDB
         end
       end
 
+      # Ox XML.
       def end_element(name)
         case name
         when :testsuite
@@ -98,6 +113,7 @@ module CIDB
         end
       end
 
+      # Ox XML.
       def attr(name, str)
         obj = nil
         case @tag_name
@@ -122,35 +138,36 @@ module CIDB
 
       protected
 
-      # Hooks for sub classers to do stuff with the parsed out data
+      # Hooks for sub classers to do stuff with the parsed out data. Above
+      # parsing code calls these to dispatch to all the handlers.
 
       # Called at the start, after opening the file, but before any parsing happens.
       def start_parse()
-        @handler.start_parse(self) if @handler&.respond_to?(:start_parse)
+        @handlers.each { |h| h.start_parse(self) if h&.respond_to? :start_parse }
       end
 
       # Called once the entire XML parse is complete.
       # Note, currently not guaranteed to be called if the parse throws.
       def end_parse()
-        @handler.end_parse(self) if @handler&.respond_to?(:end_parse)
+        @handlers.each { |h| h.end_parse(self) if h&.respond_to? :end_parse }
       end
 
       # Called with a TestSuite instance after reading the suite and it's
       # properties but before seeing and test cases.
       # XXX: Doesn't fire for an empty testsuite.
       def start_suite(suite)
-        @handler.start_suite suite
+        @handlers.each { |h| h.start_suite(suite) if h&.respond_to?(:start_suite) }
       end
 
       # Called with a TestSuite instance after processing all of it's test cases.
       # The suite is now complete. Generally what you want to hook.
       def end_suite(suite)
-        @handler.end_suite suite if @handler
+        @handlers.each { |h| h.end_suite(suite) if h&.respond_to? :end_suite }
       end
 
       # Fires once for each complete TestCase, after fully reading it's data.
       def on_case(tcase)
-        @handler.on_case tcase if @handler
+        @handlers.each { |h| h.on_case(tcase) if h&.respond_to? :on_case }
       end
 
     end #Parser
