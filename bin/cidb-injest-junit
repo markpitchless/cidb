@@ -44,12 +44,13 @@ module CIDB
       EOTXT
 
       def slop(opt)
+        data_dir = ENV['CIDB_DATA'] || '.'
         opt.string "-b", "--build_id", "Build to link test data to. Default: CIDB_BUILD_ID",
           default: ENV['CIDB_BUILD_ID']
         opt.string "--csv-suites", "Where to write test suite .csv output",
-          default: "suites.csv"
+          default: File.join(data_dir, "suites.csv")
         opt.string "--csv-cases", "Where to write test case .csv output",
-          default: "cases.csv"
+          default: File.join(data_dir, "cases.csv")
       end
 
       def main(opts, args)
@@ -87,6 +88,8 @@ module CIDB
           )
           Parser.new(csv).parse(io)
         end
+      rescue Sequel::Error => err
+        fail! 12, "Database error: #{err.class}: #{err}"
       end
     end
   end
