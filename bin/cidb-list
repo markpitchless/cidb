@@ -78,7 +78,7 @@ module CIDB
 
     def table(name, ds) # Terminal table for humans
       total = ds.count
-      tp.set :max_width, 60
+      tp.set :max_width, 80
       tp ds
       puts "#{name} #{@opts[:offset]+1} to #{ds.count + @opts[:offset]} of #{total}"
     end

@@ -5,7 +5,11 @@ set -e -o pipefail
 progname="$(basename "$0")"
 
 info() {
-  echo "$progname: $*"
+  echo "$progname: info: $*"
+}
+
+log-error() {
+  echo "$progname: error: $*"
 }
 
 export CIDB_BUILD_ID
@@ -67,18 +71,17 @@ fi
 # the DB.
 scan() {
   setup-data
-  cidb-data --put build.scan-start-time "$(date +%Y-%m-%dT%H:%M:%S%z)"
-
-  env > "$CIDB_DATA"/env.dump
+  cidb-data --put scan.start-time "$(date +%Y-%m-%dT%H:%M:%S%z)"
 
   scan-builder
   if [[ -z "$CIDB_BUILD_ID" ]]; then
-    info "ERROR: CIDB_BUILD_ID not set, can't identify the build"
-    cidb-data --put build.scan-end-time "$(date +%Y-%m-%dT%H:%M:%S%z)"
+    log-error "CIDB_BUILD_ID not set, can't identify the build"
+    cidb-data --put scan.end-time "$(date +%Y-%m-%dT%H:%M:%S%z)"
     exit 10
   fi
   cidb-data --put build.build_id "$CIDB_BUILD_ID"
 
+  scan-environment
   scan-git-checkout
 
   # Injest the build data, creating if needed
@@ -86,7 +89,7 @@ scan() {
 
   injest
 
-  cidb-data --put build.scan-end-time "$(date +%Y-%m-%dT%H:%M:%S%z)"
+  cidb-data --put scan.end-time "$(date +%Y-%m-%dT%H:%M:%S%z)"
 }
 
 # Setup the data directory, exporting CIDB_DATA with its path
@@ -98,7 +101,7 @@ setup-data() {
       info Removing existing scan with force
       rm -rf "$CIDB_DATA"
     else
-      info Cant scan already scanned directory without force
+      log-error Directory already scanned. Use force '(-f)' to re-scan.
       exit 11
     fi
   fi
@@ -146,7 +149,13 @@ scan-github() {
 scan-general() {
   info Scanning general build directory
   [ -z "$CIDB_BUILD_ID" ] && CIDB_BUILD_ID="$(hostname):$(pwd)"
-  cidb-data --put build.url "$(hostname):$(pwd)"
+  cidb-data --put build.url "file://$(hostname)$(pwd)"
+}
+
+# Just grab for the whole env for now.
+# TODO: This should do some kind of scrubbing, so we don't leak secrets.
+scan-environment() {
+  env > "$CIDB_DATA"/env.dump
 }
 
 scan-git-checkout() {
