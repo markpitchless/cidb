@@ -14,7 +14,7 @@ info() {
 #   fatal 23 Not enough entropy
 fatal() {
   code=10
-  if [ "$1" -eq "$1" ] 2>/dev/null; then # is number
+  if [ -n "$1" ] && [ "$1" -eq "$1" ] 2>/dev/null; then # is number
     code="$1"
     shift
   fi
@@ -148,20 +148,20 @@ scan-jenkins-build() {
 scan-jenkins() {
   info Scanning Jenkins workspace
   [ -z "$CIDB_BUILD_ID" ] && CIDB_BUILD_ID="$BUILD_URL"
-  cidb-data --put build.url "$BUILD_URL"
+  cidb-data --put build.builder_url "$BUILD_URL"
 }
 
 # https://docs.github.com/en/actions/reference/environment-variables
 scan-github() {
   info Scanning GitHub Workflow run
-  [ -z "$CIDB_BUILD_ID" ] && CIDB_BUILD_ID="$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
-  cidb-data --put build.url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+  [ -z "$CIDB_BUILD_ID" ] && CIDB_BUILD_ID="github:$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+  cidb-data --put build.builder_url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
 }
 
 scan-general() {
   info Scanning general build directory
   [ -z "$CIDB_BUILD_ID" ] && CIDB_BUILD_ID="$(hostname):$(pwd)"
-  cidb-data --put build.url "file://$(hostname)$(pwd)"
+  cidb-data --put build.builder_url "file://$(hostname)$(pwd)"
 }
 
 # Just grab for the whole env for now.

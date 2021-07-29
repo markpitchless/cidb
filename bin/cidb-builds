@@ -2,47 +2,77 @@
 #vim: sw=2 ts=2 sts=2:
 
 require 'cidb'
+require 'json'
 
 module CIDB
 module Builds
+  # Command line for creating and updating builds
   class Command
     include CIDB::Sloppy
 
     description <<~EOTXT
-      Builds are the core of CIDB. This command is for them.
+      Builds are the core of CIDB. This command is for creating and updating them.
+
+      To see what builds are in the db, use `cidb-list builds` instead.
+
+      WARNING: Internal: For use by scan and other tools during injest.
+
+      The command acts on the current local build dir, accessed via `cidb-data`
+      (basically `$CIDB_DATA/build.yaml`) and it's matching database records.
+      These two are tied together via the build_id. For new builds CIDB_BUILD_ID
+      is read (scan will have set this). If the build has been imported already
+      we read 'build.build_id' data key. Can override with `--build-id`.
     EOTXT
 
     def slop(o)
-      o.boolean "--put", "Put build, create if not there, update if it is."
-      o.string "--build-id", "The build_id for the new build when creating"
-      o.string "--url", "The url for the new build when creating"
+      o.boolean '--put',      'Put the build - create if not there, update if it is.'
+      o.string  '--build-id', 'The build_id for the new build when creating'
+      o.boolean '--count',    'Output total count of builds'
     end
 
     def main(opts, args)
       CIDB.connect
+
       return put_build(opts, args) if opts.put?
-      list(opts, args)
+      return count(opts, args)     if opts.count?
+
+      get_build(opts, args)
     end
 
-    def list(opts, args)
-      builds = DB[:builds]
-      builds.each do |b|
-        puts b.to_json
-      end
-      puts "#{builds.count} builds"
+    def get_build(_opts, _args)
+      id = build_id!
+      build = DB[:builds].first build_id: id
+      raise Error, "Build id=#{id.inspect} not found!" unless build
+
+      puts build.to_json
     end
 
-    # TODO: if given build_url, use that as id if no id
+    def count(_opts, _args)
+      puts format('%i', DB[:builds].count)
+    end
+
     # TODO: Check the Storage, create key if needed, merge that json?
-    def put_build(opts, args)
-      id = opts[:build_id] || Data.fetch('build.build_id', nil) || fail!(10, "No build_id given")
+    def put_build(opts, _args)
+      id = build_id!
       data = {
-        url: opts[:url] || Data.fetch('build.url', ""),
-        repository: Data.fetch('build.repository', nil),
-        revision:   Data.fetch('build.revision', nil),
-        branch:     Data.fetch('build.branch', nil),
+        builder:     Data.fetch('build.builder', 'unknown'),
+        builder_url: Data.fetch('build.builder_url', ''),
+        repository:  Data.fetch('build.repository', nil),
+        revision:    Data.fetch('build.revision', nil),
+        branch:      Data.fetch('build.branch', nil),
       }
-      build = DB[:builds].first(build_id: id)
+      put_build_data id, data
+    end
+
+    private
+
+    # Work out the current build_id. Fail! if not found.
+    def build_id!
+      @opts[:build_id] || Data.fetch('build.build_id', nil) || ENV['CIDB_BUILD_URL'] || fail!(10, 'NotFound: build_id. Set CIDB_BUILD_ID or use --build_id.')
+    end
+
+    def put_build_data(id, data)
+      build = DB[:builds].first build_id: id
       if build
         data = build.merge data
         DB[:builds].where(build_id: id).update(data)
@@ -50,7 +80,7 @@ module Builds
       else
         build = { build_id: id }.merge data
         DB[:builds].insert(build)
-        info "New build: #{id}"
+        info "Added build: #{id}"
       end
     end
   end

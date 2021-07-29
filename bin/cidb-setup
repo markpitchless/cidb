@@ -45,7 +45,7 @@ module CIDB
     # TODO: should be in the CIDB::DB lib and throw useful exceptions.
     def connect
       url = ENV['CIDB_DATABASE_URL']
-      raise 'CIDB_DATABASE_URL not set' if url.nil? || url.empty?
+      raise Error, 'CIDB_DATABASE_URL not set' if url.nil? || url.empty?
 
       CIDB.connect
     rescue NoMethodError
@@ -64,7 +64,8 @@ module CIDB
     def setup_builds
       create_table :builds do
         String :build_id, primary_key: true
-        String :url
+        String :builder_url
+        String :builder
         String :repository
         String :branch
         String :revision
