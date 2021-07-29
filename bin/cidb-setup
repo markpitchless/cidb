@@ -8,7 +8,25 @@ module CIDB
     include CIDB::Sloppy
 
     description <<~EOTXT
-      Setup a new system. Installs schema in database.
+      Setup a new system. Installs the schema into database.
+
+      Expects CIDB_DATABASE_URL to be set and pointing at your database. Then
+      just run setup (and list to get an overview of what is in the db):
+
+        export CIDB_DATABASE_URL=sqlite://ci.db
+        cidb setup
+        cidb list
+
+      By default it will skip existing tables, use `--drop-tables` to reset the
+      db to empty with the latest schema.
+
+      You should only need to setup the database once, after that just set
+      CIDB_DATABASE_URL any where you will be running cidb commands. Under CI
+      you will want to use whatever secrets mechanism your builder has.
+
+      EXIT CODES:
+          Zero (0) if the database setup worked. 10 if db connection fails.
+      non-zero for other errors.
     EOTXT
 
     def slop(o)
@@ -16,11 +34,34 @@ module CIDB
     end
 
     def main(opts, args)
-      CIDB.connect
-      load_schema
+      connect
+      setup_schema
     end
 
-    def load_schema
+    private
+
+    # Trap connect fail early and try to give the user a decent message, as the
+    # db and connection string might be new.
+    # TODO: should be in the CIDB::DB lib and throw useful exceptions.
+    def connect
+      url = ENV['CIDB_DATABASE_URL']
+      raise 'CIDB_DATABASE_URL not set' if url.nil? || url.empty?
+
+      CIDB.connect
+    rescue NoMethodError
+      fail! 10, "CIDB_DATABASE_URL malformed, no adapter name"
+    rescue StandardError => err
+      fail! 10, "Database connection failed (#{err.class}): #{err}"
+    end
+
+    def setup_schema
+      setup_builds
+      setup_test_suites
+      setup_test_cases
+      info 'Setup database schema: %s' % DB.tables.join(', ')
+    end
+
+    def setup_builds
       create_table :builds do
         String :build_id, primary_key: true
         String :url
@@ -28,32 +69,33 @@ module CIDB
         String :branch
         String :revision
       end
+    end
 
+    def setup_test_suites
       create_table :test_suites do
         String   :build_id
         String   :name
-        primary_key [:build_id, :name]
+        primary_key %i[build_id name]
         DateTime :timestamp
         Integer  :tests,    null: false, default: 0
         Integer  :failures, null: false, default: 0
         Integer  :errors,   null: false, default: 0
         Float    :time,     null: false, default: 0.0
       end
+    end
 
+    def setup_test_cases
       create_table :test_cases do
         String  :build_id
         String  :suite_name
         String  :classname
         String  :name
-        primary_key [:build_id, :suite_name, :classname, :name]
+        primary_key %i[build_id suite_name classname name]
         Float   :time,    null: false, default: 0.0
         Boolean :skipped, null: false, default: false
         Boolean :failed,  null: false, default: false
       end
-      info "Setup database schema: " + DB.tables.inspect
     end
-
-    private
 
     # Wrap DB.create_table with a skip on exists and logging
     # TODO: Log if we dropped, created, skipped etc (or not worry)?
