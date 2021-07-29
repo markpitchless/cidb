@@ -8,8 +8,18 @@ info() {
   echo "$progname: info: $*"
 }
 
-log-error() {
-  echo "$progname: error: $*"
+# Log message as fatal and exit 10.
+#   fatal "Boom"
+# If the first arg is a number, use that exit code.
+#   fatal 23 Not enough entropy
+fatal() {
+  code=10
+  if [ "$1" -eq "$1" ] 2>/dev/null; then # is number
+    code="$1"
+    shift
+  fi
+  echo "$progname: fatal: $*"
+  exit "$code"
 }
 
 export CIDB_BUILD_ID
@@ -48,6 +58,9 @@ while getopts ":hfb:" opt; do
       ;;
     \? ) usage
       ;;
+    * )
+      fatal "Unknown option: ${opt}"
+      ;;
   esac
 done
 shift $((OPTIND -1))
@@ -75,9 +88,8 @@ scan() {
 
   scan-builder
   if [[ -z "$CIDB_BUILD_ID" ]]; then
-    log-error "CIDB_BUILD_ID not set, can't identify the build"
     cidb-data --put scan.end-time "$(date +%Y-%m-%dT%H:%M:%S%z)"
-    exit 10
+    fatal 10 "CIDB_BUILD_ID not set, can't identify the build"
   fi
   cidb-data --put build.build_id "$CIDB_BUILD_ID"
 
@@ -101,8 +113,7 @@ setup-data() {
       info Removing existing scan with force
       rm -rf "$CIDB_DATA"
     else
-      log-error Directory already scanned. Use force '(-f)' to re-scan.
-      exit 11
+      fatal Directory already scanned. Use force '(-f)' to re-scan.
     fi
   fi
   mkdir -p "$CIDB_DATA"
@@ -119,7 +130,7 @@ scan-builder() {
     CIDB_BUILDER=github
   fi
   cidb-data --put build.builder "$CIDB_BUILDER"
-  info Scanning $CIDB_BUILDER build
+  info Scanning "$CIDB_BUILDER" build
   scan-"$CIDB_BUILDER"
 }
 

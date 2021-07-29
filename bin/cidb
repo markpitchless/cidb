@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 #vim: sw=2 ts=2 sts=2:
-
 set -e -o pipefail
-progname="$(basename $0)"
 
-# Add the bin to the PATH, first, for finding cidb-* commands
-# Makes it work inside a bundle or called direct in checkout (./bin/cidb) when
-# not added to the PATH.
-DIR="$( cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd )"
+# Add the cidb bin to the PATH, first, for finding cidb-* commands.  Makes it
+# work inside a bundle or called direct in checkout (./bin/cidb) when not added
+# to the PATH.
+DIR=$( cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd )
 PATH="$DIR:$PATH"
+
+progname="$(basename "$0")"
 
 usage() {
 cat <<EOHELP
@@ -16,47 +16,65 @@ USAGE:
   $progname [COMMAND] [OPTIONS]
 
 OPTIONS:
-  -h       Show this help"
+  -h  Show this help
 
 DESCRIPTION:
-
-CIDB (Continuous Investigation DataBase), is a companion tool to run with
-whatever you do for CI. You tell it when you start and when your done. Like a
-crime scene investigation, it hovers up logs, junit files, images etc,
-recording all the details in a database and the artifacts in storage.
+  CIDB (Continuous Integration DataBase), is a companion tool to run with whatever
+you do for CI. You tell it when you start and when your done. Like a crime scene
+investigation, it hovers up logs, junit files, images etc, recording all the
+details in a database and the artifacts in storage.
 
 This top level command provides help and dispatch to more specific commands.
 
 COMMANDS:
+  These are the main user commands and make up the public interface:
+
+  setup - setup database
   scan  - run in a build site to collect data
   list  - list data collected from builds
+
+(Others exist and get called by internally, they should be considered private
+for now - feel free to use but they might change, go away in future!).
+
+EXAMPLE:
+
+  export CIDB_DATABASE_URL=sqlite://ci.db
+  cidb setup
+  make test
+  cidb scan .
+  cidb list
+  cidb list builds
+
+EXIT CODES:
+  If the COMMAND is found and run, exits with that commands status. Otherwise:
+
+   0  - when showing usage
+   1  - unknown option or opt parsing error
+   2  - sub cidb COMMAND not found
+
 EOHELP
   exit 0
 }
 
 while getopts ":h" opt; do
   case ${opt} in
-    h ) usage
-      ;;
-    \? ) usage
+    h ) usage ;;
+    * ) echo "$progname: fatal: unknown option: $opt"
+      exit 1
       ;;
   esac
 done
 shift $((OPTIND -1))
 
-if [ $# -eq 0 ]; then
+if [ $# -eq 0 ]; then # no args
   usage
 fi
 
-# alias cidb-ls='cidb-list'
-# cidb-ls() {
-#   cidb-list "$@"
-# }
-
-cmd="cidb-$1"; shift
-if which "$cmd" &>/dev/null; then
-  exec $cmd "$@"
+# If we have an arg, it is a sub-command. Dispatch to (exec) the command if
+# found, fail otherwise.
+cmd="$1"; shift
+if command -v "cidb-$cmd" &>/dev/null; then
+  exec "cidb-$cmd" "$@"
 fi
-
-echo "$progname: error: unknown command $cmd"
+echo "$progname: fatal: unknown command: $cmd"
 exit 2
