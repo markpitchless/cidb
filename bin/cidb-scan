@@ -179,7 +179,13 @@ scan-git-checkout() {
 
   cidb-data --put build.revision "$GIT_COMMIT"
   cidb-data --put build.repository "$(git config remote.origin.url)"
-  cidb-data --put build.branch "$(git symbolic-ref HEAD)"
+
+  if [ -n "$GITHUB_REF" ]; then
+    branch="${GITHUB_REF}"
+  else
+    branch="$(git symbolic-ref HEAD)"
+  fi
+  cidb-data --put build.branch "$branch"
 }
 
 # Injest happens after all the scanners have run. Injesters fill the database
