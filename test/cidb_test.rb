@@ -4,8 +4,6 @@ require "test_helper"
 
 class CIDBTest < Test::Unit::TestCase
   test "VERSION" do
-    assert do
-      ::CIDB.const_defined?(:VERSION)
-    end
+    refute_nil ::CIDB::VERSION
   end
 end
