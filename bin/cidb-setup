@@ -1,6 +1,8 @@
 #!/usr/bin/env ruby
 #vim: sw=2 ts=2 sts=2:
 
+require 'sequel' # Sequel::Error
+
 require 'cidb'
 
 module CIDB
@@ -45,13 +47,13 @@ module CIDB
     # TODO: should be in the CIDB::DB lib and throw useful exceptions.
     def connect
       url = ENV['CIDB_DATABASE_URL']
-      raise Error, 'CIDB_DATABASE_URL not set' if url.nil? || url.empty?
+      fatal! 'CIDB_DATABASE_URL not set' if url.nil? || url.empty?
 
       CIDB.connect
     rescue NoMethodError
-      fail! 10, "CIDB_DATABASE_URL malformed, no adapter name"
-    rescue StandardError => err
-      fail! 10, "Database connection failed (#{err.class}): #{err}"
+      fatal! 'CIDB_DATABASE_URL malformed, no adapter name'
+    rescue Sequel::Error => err
+      fatal! "Database connection failed (#{err.class}): #{err}"
     end
 
     def setup_schema

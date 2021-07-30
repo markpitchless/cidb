@@ -47,13 +47,8 @@ module CIDB
         end
       end
     end
-    def self.included(base) base.extend DSL end
-
-
-    ## Log fatal error message and exit with the code given
-    def fail!(status, msg)
-      fatal msg
-      exit status
+    def self.included(base)
+      base.extend DSL
     end
 
     def banner
@@ -97,12 +92,14 @@ module CIDB
       @args = @opts.arguments
       ARGV.replace @opts.arguments # Make sure sloptions aren't consumed by ARGF
       main @opts, @args if respond_to? :main # Dispatch to the including class
-    rescue Slop::Error => err
-      fail! 1, err
+    rescue CIDB::FatalError => err
+      exit err.exitstatus # hopefully raised with fatal! so logged
+    rescue Slop::Error => err # opt parsing error
+      error err
+      exit 2
     rescue CIDB::Error => err
-      fail! 23, err
-    #rescue StandardError => err
-    #  fail! 2, err
+      error err
+      exit 10
     end
 
   end #Sloppy

@@ -66,9 +66,12 @@ module Builds
 
     private
 
-    # Work out the current build_id. Fail! if not found.
+    # Work out the current build_id. fatal! if not found.
     def build_id!
-      @opts[:build_id] || Data.fetch('build.build_id', nil) || ENV['CIDB_BUILD_URL'] || fail!(10, 'NotFound: build_id. Set CIDB_BUILD_ID or use --build_id.')
+      @opts[:build_id] ||
+        Data.fetch('build.build_id', nil) ||
+        ENV['CIDB_BUILD_URL'] ||
+        fatal!('build_id not set and is not derivable. Set CIDB_BUILD_ID or use --build_id.')
     end
 
     def put_build_data(id, data)

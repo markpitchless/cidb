@@ -6,9 +6,8 @@ module CIDB
   # Mixin to add methods for counting things.
   #
   # It is pretty common for classes doing scanning, import type work to need to
-  # keep (integer) counts of things. Items parsed, number skipped, failed,
-  # passed etc. Just import Counting, call inc to count and counted to get the
-  # count.
+  # keep (integer) counts of things. Items parsed, number skipped, failed, etc.
+  # Just import Counting, call inc to count and counted to get the count.
   #
   #   class FooImporter
   #     include CIDB::Counting

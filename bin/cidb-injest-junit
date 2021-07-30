@@ -54,7 +54,7 @@ module CIDB
       end
 
       def main(opts, args)
-        fail!(10, "No build_id, set CIDB_BUILD_ID or --build_id") unless opts[:build_id]
+        fatal! 'No build_id, set CIDB_BUILD_ID or --build_id' unless opts[:build_id]
         dir = args.empty? ? '.' : args[0]
 
         CIDB.connect
@@ -85,7 +85,7 @@ module CIDB
           Parser.new( csv_h, db_h ).parse(io)
         end
       rescue Sequel::Error => err
-        fail! 12, "Database error: #{err.class}: #{err}"
+        fatal! "Database error: #{err.class}: #{err}"
       end
     end
   end

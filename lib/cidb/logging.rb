@@ -42,7 +42,20 @@ module CIDB
       logger.error msg
     end
 
-    ## Log fatal message
+    ##
+    # Log fatal message and raise CIDB::FatalError with the message.
+    #
+    # The FatalError raised will be caught at the edge of the `cicd` commands,
+    # which will then fail (non-zero status) gracefully. The log message you
+    # give is likley what the user (or later log spelunker) will see. Try iand
+    # include details of what the can do to resolve the situation. e.g. what env
+    # var to set or options to pass.
+    def fatal!(msg)
+      logger.fatal msg
+      raise CIDB::FatalError, msg, caller
+    end
+
+    ## DEPRECATED: old fatal logging that doesn't throw
     def fatal(msg)
       logger.fatal msg
     end

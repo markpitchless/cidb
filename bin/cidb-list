@@ -51,7 +51,7 @@ module CIDB
 
     def list(opts, args)
       name = args[0]
-      fail!(10, "List #{name.inspect} not found") unless DB.table_exists?(name)
+      fatal! "List #{name.inspect} not found" unless DB.table_exists? name
 
       ds = DB[name.to_sym]
       ds = ds.where(build_id: opts[:build_id]) if opts.build_id?
