@@ -1,9 +1,9 @@
 #!/usr/bin/env ruby
 #vim: sw=2 ts=2 sts=2:
 
-require 'cidb'
-require 'table_print'
 require 'csv'
+require 'terminal-table'
+require 'cidb'
 
 module CIDB
   class ListCommand
@@ -78,9 +78,13 @@ module CIDB
 
     def table(name, ds) # Terminal table for humans
       total = ds.count
-      tp.set :max_width, 80
-      tp ds
-      puts "#{name} #{@opts[:offset]+1} to #{ds.count + @opts[:offset]} of #{total}"
+      table = Terminal::Table.new do |t|
+        t.headings = ds.columns
+        t.style = { border: :unicode, border_top: false, border_bottom: false, border_left: false, border_right: false }
+        ds.each { |row| t << row.values }
+      end
+      puts table
+      puts "#{@opts[:offset]+1} to #{ds.count + @opts[:offset]} of #{total} #{name}"
     end
   end
 end #CIDB

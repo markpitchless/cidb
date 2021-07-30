@@ -17,4 +17,5 @@ gem "sqlite3", "~> 1.4"
 
 gem "pg", "~> 1.2"
 
-gem "table_print", "~> 1.5"
+
+gem "terminal-table", "~> 3.0"
