@@ -1,0 +1,56 @@
+#!/usr/bin/env ruby
+#vim: sw=2 ts=2 sts=2:
+
+require 'find'
+require 'cidb'
+
+module CIDB
+  class InjestArtifactsCommand
+    include CIDB::Sloppy
+
+    description <<~EOTXT
+    Injest files from the build site into storage.
+
+    Internal. Called as part of the scanning process.
+    EOTXT
+
+    def slop(o)
+      o.boolean "--dry", "Dry run, print out files that would have been collected"
+    end
+
+    def main(opts, args)
+      update_manifest
+      # TODO: build the external command needed to run the upload the manifest
+      info "TODO: Upload manifest files"
+    end
+
+    protected
+
+    # Append, so that scanners and injesters can add files to stash
+    # TODO: account for the cidb/ (CIDB_DATA) directory properly.
+    def update_manifest
+      manifest_path = File.join(ENV['CIDB_DATA'] || '.', 'manifest.txt')
+      manifest_f = File.open manifest_path, 'a'
+      find_artifacts.each do |path|
+        manifest_f << "#{path}\n"
+      end
+      info "Updated manifest: #{manifest_path}"
+    end
+
+    # Returns an Enumerator for file paths of artifacts
+    #
+    # Any file not known to git is the starting list. We know the commit, so can
+    # recreate the git files any time, just wasting spaceing grabbing those.
+    # Anything git doesn't know about was put there by the build (or a user), so
+    # could well contain useful evidence (or be caching fluff!).
+    #
+    # TODO: will need a support for other vcs
+    def find_artifacts(target_dir = '.')
+      Enumerator.new do |yielder|
+        `git ls-files --others -z`.split("\x0").each { |f| yielder << f }
+      end
+    end
+  end #InjestArtifactsCommand
+end #CIDB
+
+CIDB::InjestArtifactsCommand.new.run
