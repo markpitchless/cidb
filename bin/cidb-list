@@ -79,9 +79,10 @@ module CIDB
     def table(name, ds) # Terminal table for humans
       total = ds.count
       table = Terminal::Table.new do |t|
-        t.headings = ds.columns
+        t.headings = [:'#'] + ds.columns
         t.style = { border: :unicode, border_top: false, border_bottom: false, border_left: false, border_right: false }
-        ds.each { |row| t << row.values }
+        ds.each_with_index { |row, i| t << [i+1] + row.values }
+        t.align_column 0, :right
       end
       puts table
       puts "#{@opts[:offset]+1} to #{ds.count + @opts[:offset]} of #{total} #{name}"
