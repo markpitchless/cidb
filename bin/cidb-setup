@@ -66,11 +66,11 @@ module CIDB
     def setup_builds
       create_table :builds do
         String :build_id, primary_key: true
-        String :builder_url
-        String :builder
         String :repository
-        String :branch
         String :revision
+        String :branch
+        String :builder
+        String :builder_url
       end
     end
 
