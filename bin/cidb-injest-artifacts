@@ -15,16 +15,54 @@ module CIDB
     EOTXT
 
     def slop(o)
+      opt.string "-b", "--build_id","Build to upload artifacts to. Default: CIDB_BUILD_ID",
+        default: ENV['CIDB_BUILD_ID']
       o.boolean "--dry", "Dry run, print out files that would have been collected"
     end
 
     def main(opts, args)
+      fatal! 'No build_id, set CIDB_BUILD_ID or --build_id' unless opts[:build_id]
+
       update_manifest
       # TODO: build the external command needed to run the upload the manifest
-      info "TODO: Upload manifest files"
+      connect
+      upload
     end
 
     protected
+
+    def connect
+      url = ENV['CIDB_STORAGE_URL']
+      fatal! 'CIDB_STORAGE_URL not set' if url.nil? || url.empty?
+
+      url = URI.parse url
+      case url.scheme
+      when 'file'
+        connect_file_store url.path
+      when 's3'
+        fatal! 'TODO: S3 storage driver needs writing!'
+      else
+        fatal! "Unknown storage driver: #{url.schema}"
+      end
+      info "Connected to #{url.scheme} storage: #{url.path}"
+    end
+
+    def connect_file_store(path)
+      fatal! "Not a directory: #{path}" unless FileTest.directory? path
+      @storage_dir = path
+      true
+    end
+
+    # TODO: Needs to put these in per build directories
+    def upload
+      info "Uploading manifest files"
+      manifest = File.join ENV['CIDB_DATA'] || '.', 'manifest.txt'
+      File.read(manifest).split("\n").each do |path|
+        dest = File.join @storage_dir, path
+        FileUtils.mkdir_p File.dirname(dest)
+        FileUtils.cp_r path, dest, verbose: true
+      end
+    end
 
     # Append, so that scanners and injesters can add files to stash
     # TODO: account for the cidb/ (CIDB_DATA) directory properly.
