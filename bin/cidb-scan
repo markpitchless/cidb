@@ -41,9 +41,12 @@ DESCRIPTION:
 Scan the PATHS for files of interest to CIDB. Artifacts we can collect and
 logs, junit results we can parse, etc
 
-Injest the files and directories (recursivly) given by PATHS. Files will be
-uploaded to the evidence locker and analysis written to the database. All
-this is tagged to be part of this build.
+Determines the type of build from the environment, deriving a suitable build_id,
+exporting CIDB_BUILD_ID. If that doesn't work (ie scanning a local directory)
+will fail unless you set CIDB_BUILD_ID or pass an id using -b.
+
+Interesting files will be uploaded to the evidence locker, tagged to be part of
+CIDB_BUILD_ID.
 EOHELP
   exit 0
 }
@@ -96,8 +99,7 @@ scan() {
   scan-environment
   scan-git-checkout
 
-  # Injest the build data, creating if needed
-  cidb-builds --put
+  cidb-builds --put # Injest the build data, creating if needed
 
   injest
 
@@ -120,6 +122,7 @@ setup-data() {
 }
 
 # Work out what ran this build. Run additional scans by type.
+# Exports CIDB_BUILDER
 scan-builder() {
   export CIDB_BUILDER=general
   if [ -f build.xml ]; then
@@ -134,6 +137,7 @@ scan-builder() {
   scan-"$CIDB_BUILDER"
 }
 
+# Scan a jenkins build directory (ie somewhere in /var/jenkins)
 scan-jenkins-build() {
   info Scanning Jenkins build dir
   info TODO: parse build.xml, set build_id
@@ -144,6 +148,7 @@ scan-jenkins-build() {
   fi
 }
 
+# Scan from inside a running jenkins build
 # https://www.jenkins.io/doc/book/pipeline/jenkinsfile/#using-environment-variables
 scan-jenkins() {
   info Scanning Jenkins workspace
@@ -151,6 +156,7 @@ scan-jenkins() {
   cidb-data --put build.builder_url "$BUILD_URL"
 }
 
+# Scan from inside a running GitHub Actions workflow
 # https://docs.github.com/en/actions/reference/environment-variables
 scan-github() {
   info Scanning GitHub Workflow run

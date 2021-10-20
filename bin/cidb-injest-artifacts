@@ -15,7 +15,7 @@ module CIDB
     EOTXT
 
     def slop(o)
-      opt.string "-b", "--build_id","Build to upload artifacts to. Default: CIDB_BUILD_ID",
+      o.string "-b", "--build_id","Build to upload artifacts to. Default: CIDB_BUILD_ID",
         default: ENV['CIDB_BUILD_ID']
       o.boolean "--dry", "Dry run, print out files that would have been collected"
     end
