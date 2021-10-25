@@ -1,8 +1,10 @@
 #!/usr/bin/env ruby
 #vim: sw=2 ts=2 sts=2:
 
-require 'cidb'
 require 'json'
+
+require 'cidb'
+require 'cidb/ql'
 
 module CIDB
 module Builds
@@ -31,24 +33,39 @@ module Builds
     end
 
     def main(opts, args)
-      CIDB.connect
-
       return put_build(opts, args) if opts.put?
       return count(opts, args)     if opts.count?
 
-      get_build(opts, args)
-    end
-
-    def get_build(_opts, _args)
       id = build_id!
-      build = DB[:builds].first build_id: id
+      build = get_build(id)
       raise Error, "Build id=#{id.inspect} not found!" unless build
-
       puts build.to_json
     end
 
+    # Work out the current build_id. fatal! if not found.
+    def build_id!
+      @opts[:build_id] ||
+        Data.fetch('build.build_id', nil) ||
+        ENV['CIDB_BUILD_ID'] ||
+        fatal!('build_id not set and is not derivable. Set CIDB_BUILD_ID or use --build_id.')
+    end
+
     def count(_opts, _args)
-      puts format('%i', DB[:builds].count)
+      fatal! "TODO: count of builds"
+    end
+
+    private
+
+    def get_build(id)
+      gql = <<~GRAPHQL
+        query ($id: String) {
+          builds(where: {build_id: {_eq: $id}}) {
+            build_id
+            repository
+          }
+        }
+      GRAPHQL
+      CIDB::QL.query(gql, { id: id.to_s }).data.to_h['builds'][0]
     end
 
     # TODO: Check the Storage, create key if needed, merge that json?
@@ -57,32 +74,32 @@ module Builds
       data = {
         builder:     Data.fetch('build.builder', 'unknown'),
         builder_url: Data.fetch('build.builder_url', ''),
-        repository:  Data.fetch('build.repository', nil),
-        revision:    Data.fetch('build.revision', nil),
-        branch:      Data.fetch('build.branch', nil),
+        repository:  Data.fetch('build.repository', ''),
+        revision:    Data.fetch('build.revision', ''),
+        branch:      Data.fetch('build.branch', ''),
       }
       put_build_data id, data
     end
 
-    private
-
-    # Work out the current build_id. fatal! if not found.
-    def build_id!
-      @opts[:build_id] ||
-        Data.fetch('build.build_id', nil) ||
-        ENV['CIDB_BUILD_URL'] ||
-        fatal!('build_id not set and is not derivable. Set CIDB_BUILD_ID or use --build_id.')
-    end
-
     def put_build_data(id, data)
-      build = DB[:builds].first build_id: id
+      build = get_build id
       if build
         data = build.merge data
-        DB[:builds].where(build_id: id).update(data)
+        CIDB::QL.query do
+          mutation do
+            update_builds_by_pk(pk_columns: { build_id: id }, _set: build)
+          end
+        end
         info "Updated build: #{id}"
       else
         build = { build_id: id }.merge data
-        DB[:builds].insert(build)
+        CIDB::QL.query do
+          mutation do
+            insert_builds(objects: [build]) do
+              affected_rows
+            end
+          end
+        end
         info "Added build: #{id}"
       end
     end

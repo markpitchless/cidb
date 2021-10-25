@@ -200,6 +200,7 @@ scan-git-checkout() {
 # TODO: make optional, so easier to test scan locally
 injest() {
   # Find any junit files and parse into csv and insert into db
+  info "Injesting"
   cidb-injest-junit
 
   # Sync to the S3 bucket, do this last, so we collect any data written or files

@@ -4,6 +4,7 @@
 require 'csv'
 require 'terminal-table'
 require 'cidb'
+require 'cidb/ql'
 
 module CIDB
   class ListCommand
@@ -34,58 +35,108 @@ module CIDB
     end
 
     def main(opts, args)
-      CIDB.connect
       return list_data_sets if args.empty?
       list(opts, args)
     end
 
     def list_data_sets
-      [
-        { name: 'builds',      ds: DB[:builds] },
-        { name: 'test_suites', ds: DB[:test_suites] },
-        { name: 'test_cases',  ds: DB[:test_cases] },
-      ].each_with_index do |q, i|
-        puts "#{i+1}\t#{q[:ds].count}\t#{q[:name]} "
-      end
+      # TODO: re-impliment counts for these
+      puts 'builds'
+      puts 'test_suites'
+      puts 'test_cases'
     end
 
     def list(opts, args)
       name = args[0]
-      fatal! "List #{name.inspect} not found" unless DB.table_exists? name
 
-      ds = DB[name.to_sym]
-      ds = ds.where(build_id: opts[:build_id]) if opts.build_id?
-      ds = ds.limit(opts[:limit]).offset(opts[:offset])
-
-      return json(ds) if opts.json?
-      return csv(ds)  if opts.csv?
-      return table(name, ds)
-    end
-
-    def json(ds)
-      ds.each do |b|
-        puts b.to_json
+      data = case name.to_sym
+      when :builds               then list_builds
+      when :test_suites, :suites then list_test_suites
+      when :test_cases, :cases   then list_test_cases
+      else
+        fatal! "List #{name.inspect} not found"
       end
+
+      # TODO: re-add build_id, limit and offset
+      # ds = DB[name.to_sym]
+      # ds = ds.where(build_id: opts[:build_id]) if opts.build_id?
+      # ds = ds.limit(opts[:limit]).offset(opts[:offset])
+
+      return puts data.to_json if opts.json?
+      return csv(data)         if opts.csv?
+      return table('foo', data)
     end
 
-    def csv(ds)
-      names = ds.columns
+    def list_builds
+      res = CIDB::QL.query <<~GRAPHQL
+        query {
+          builds {
+            build_id
+            repository
+            revision
+            branch
+            builder
+            builder_url
+          }
+        }
+      GRAPHQL
+      res.data.to_h['builds']
+    end
+
+    def list_test_suites
+      res = CIDB::QL.query <<~GRAPHQL
+        query {
+          test_suites {
+            build_id
+            errors
+            failures
+            name
+            tests
+            time
+            timestamp
+          }
+        }
+      GRAPHQL
+      res.data.to_h['test_suites']
+    end
+
+    def list_test_cases
+      res = CIDB::QL.query <<~GRAPHQL
+        query {
+          test_cases {
+            build_id
+            classname
+            failed
+            name
+            skipped
+            suite_name
+            time
+          }
+        }
+      GRAPHQL
+      res.data.to_h['test_cases']
+    end
+
+    def csv(data)
+      names = data[0].keys
       puts CSV.generate_line(names)
-      ds.each do |r|
+      data.each do |r|
         puts CSV.generate_line(r.values_at(*names))
       end
     end
 
-    def table(name, ds) # Terminal table for humans
-      total = ds.count
+    def table(name, data) # Terminal table for humans
+      names = data[0].keys
+      total = data.size
       table = Terminal::Table.new do |t|
-        t.headings = [:'#'] + ds.columns
+        t.headings = [:'#'] + names
         t.style = { border: :unicode, border_top: false, border_bottom: false, border_left: false, border_right: false }
-        ds.each_with_index { |row, i| t << [i+1] + row.values }
+        data.each_with_index { |row, i| t << [i+1] + row.values }
         t.align_column 0, :right
       end
       puts table
-      puts "#{@opts[:offset]+1} to #{ds.count + @opts[:offset]} of #{total} #{name}"
+      # TODO: re-add this with limits and offset. Needs a total.
+      # puts "#{@opts[:offset]+1} to #{data.size + @opts[:offset]} of #{total} #{name}"
     end
   end
 end #CIDB

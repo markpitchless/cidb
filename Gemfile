@@ -19,3 +19,5 @@ gem "pg", "~> 1.2"
 
 
 gem "terminal-table", "~> 3.0"
+
+gem "graphlient", "~> 0.5.0"

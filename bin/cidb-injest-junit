@@ -2,6 +2,7 @@
 #vim: sw=2 ts=2 sts=2:
 
 require 'cidb'
+require 'cidb/junit/gql_writer.rb'
 require 'find'
 
 module CIDB
@@ -57,7 +58,6 @@ module CIDB
         fatal! 'No build_id, set CIDB_BUILD_ID or --build_id' unless opts[:build_id]
         dir = args.empty? ? '.' : args[0]
 
-        CIDB.connect
         find_junit(dir).each do |path|
           junit path
           info "Injested junit: #{path.inspect}"
@@ -79,16 +79,15 @@ module CIDB
       end
 
       def junit(path)
-        db_h  = DBWriter.new @opts[:build_id]
+        info "Injesting: #{path.inspect}"
+        gql_h = GQLWriter.new @opts[:build_id]
         csv_h = CSVWriter.new suite_file: @opts[:csv_suites], case_file: @opts[:csv_cases]
         File.open(path, 'r') do |io|
-          Parser.new( csv_h, db_h ).parse(io)
+          Parser.new( csv_h, gql_h ).parse(io)
         end
-      rescue Sequel::Error => err
-        fatal! "Database error: #{err.class}: #{err}"
       end
     end
   end
 end
 
-CIDB::JUnit::Command.new.run if $0 == __FILE__
+CIDB::JUnit::Command.new.run
