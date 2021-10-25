@@ -1,0 +1,3 @@
+- "!include public_builds.yaml"
+- "!include public_test_cases.yaml"
+- "!include public_test_suites.yaml"
