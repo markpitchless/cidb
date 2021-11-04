@@ -19,6 +19,8 @@ hasura metadata reload --endpoint=http://localhost:8080/
 
 The graphql API is now up and running on http://localhost:8080/v1/graphql. The hasura console is on http://localhost:8080/console.
 
+Now is a good time to go [start the vue UI](../vue/README.md) to connect to this backend.
+
 Get a psql prompt in the backend database with:
 
 ```bash

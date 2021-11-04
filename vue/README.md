@@ -4,7 +4,7 @@ Provides the browser front end for CIDB.
 
 ## Usage
 
-Start the local dev CIDB backend and then:
+Start the local dev [CIDB hasura backend](../hasura/README.md) and then:
 
 ```bash
 npm install
