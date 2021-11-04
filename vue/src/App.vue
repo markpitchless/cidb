@@ -2,12 +2,14 @@
 // This starter template is using Vue 3 <script setup> SFCs
 // Check out https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup
 import BuildsList from './components/BuildsList.vue';
+import TestCaseList from './components/TestCaseList.vue';
 </script>
 
 <template>
   <img alt="Vue logo" src="./assets/logo.png" />
   <div v-if="$apollo.loading">Loading...</div>
   <BuildsList />
+  <TestCaseList />
 </template>
 
 <style>
