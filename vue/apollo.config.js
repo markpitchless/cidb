@@ -4,7 +4,7 @@ module.exports = {
     client: {
       service: {
         name: 'cidb',
-        url: 'http://localhost:8080/v1/graphql',
+        url: 'http://localhost:8023/v1/graphql',
       },
       // Files processed by the extension
       includes: [
