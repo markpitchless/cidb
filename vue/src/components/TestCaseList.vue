@@ -37,10 +37,12 @@ export default {
 </script>
 
 <template>
+<div>
   <h1>Test Cases</h1>
   <div v-if="$apollo.queries.build.loading">Loading...</div>
   <!-- <div>{{ build }}</div> -->
-  <table>
+  <div v-if="!build">No cases</div>
+  <table v-if="build">
       <tr v-for="(test_case, idx) in build.test_cases" :key="test_case.name">
         <td>{{ idx }}</td>
         <td>{{ test_case.build_id }}</td>
@@ -52,4 +54,5 @@ export default {
         <td>{{ test_case.time }}</td>
       </tr>
   </table>
+</div>
 </template>
