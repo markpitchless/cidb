@@ -13,11 +13,12 @@ docker compose up -d
 To restore the [migrations and meta data](https://hasura.io/docs/latest/graphql/core/migrations/index.html) you need to [install the hasura CLI](https://hasura.io/docs/latest/graphql/core/hasura-cli/install-hasura-cli.html) tool and then:
 
 ```bash
-hasura migrate apply --all-databases --endpoint=http://localhost:8080/
-hasura metadata reload --endpoint=http://localhost:8080/
+hasura metadata apply
+hasura migrate apply
+hasura metadata reload
 ```
 
-The graphql API is now up and running on http://localhost:8080/v1/graphql. The hasura console is on http://localhost:8080/console.
+The graphql API is now up and running on http://localhost:8023/v1/graphql. The hasura console is on http://localhost:8023/console.
 
 Now is a good time to go [start the vue UI](../vue/README.md) to connect to this backend.
 
